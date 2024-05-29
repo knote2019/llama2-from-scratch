@@ -8,9 +8,9 @@ this part will introduce structure of LLaMA2-7B model, and also the links to dow
 
 ![image](images/llama2-structure.png)
 
-above picture edited from images/llama2-structure.dia with dia image draw tool. 
+above picture edited from images/llama2-structure.dia with **dia image draw tool**. 
 
-you can download dia image draw tool from https://sourceforge.net/projects/dia-installer.
+you can download **dia image draw tool** from https://sourceforge.net/projects/dia-installer.
 
 ### 1.2 download model.
 
@@ -57,7 +57,7 @@ print(json.dumps(list(model.keys()), indent=4))
         "rope.freqs"
     ]
 
-you can find there are 32 layers for LLaMA2-7B weight.
+you can find there are **32** layers for LLaMA2-7B weight.
 
 | weight name                     | usage                |
 |---------------------------------|----------------------|
@@ -77,7 +77,7 @@ you can find there are 32 layers for LLaMA2-7B weight.
 
 ![image](images/weight-overview.png)
 
-you can see the default data type of weight is bfloat16.
+you can see the default data type of weight is **bfloat16**.
 
 # 2. Operators.
 
@@ -100,7 +100,7 @@ print(tokens)
 
 ![image](images/tokenizer-overview.png)
 
-The LLaMA tokenizer is a BPE model based on sentencepiece.
+The LLaMA tokenizer is a **BPE** model based on **sentencepiece**.
 
 ### 2.2 embedding.
 
@@ -142,7 +142,7 @@ print(y)
 
 ![image](images/rms-overview.png)
 
-you can see "layers.*.attention_norm.weight" is the weight of γ (gamma) in RMS formula.
+you can see **layers.*.attention_norm.weight** is the weight of γ (gamma) in RMS formula.
 
 ### 2.3 RoPE (Rotary Position Embedding).
 
