@@ -1,8 +1,8 @@
 # 1. Introduction
 
-official llama2 model definition can be find in https://github.com/meta-llama/llama.
+official LLaMA model definition can be find in https://github.com/meta-llama/llama.
 
-this part will introduce structure of llama2 7b model, and also the links to download model weight.
+this part will introduce structure of LLaMA2-7B model, and also the links to download model weight.
 
 ### 1.1 model structure.
 
@@ -14,14 +14,15 @@ you can download dia image draw tool from https://sourceforge.net/projects/dia-i
 
 ### 1.2 download model.
 
-from below two site you can download model weight for inference.
-
 | site       | download link                                          |
 |------------|--------------------------------------------------------|
 | gitee      | https://ai.gitee.com/hf-models/meta-llama/Llama-2-7b   |
 | modelscope | https://www.modelscope.cn/models/shakechen/Llama-2-7b  |
 
+from above two site you can download model weight for inference.
+
 ### 1.3 model parameters.
+
 ```python
 import json
 import torch
@@ -56,7 +57,7 @@ print(json.dumps(list(model.keys()), indent=4))
         "rope.freqs"
     ]
 
-you can find there are 32 layers for llama2 7b weight.
+you can find there are 32 layers for LLaMA2-7B weight.
 
 | weight name                     | usage                |
 |---------------------------------|----------------------|
@@ -74,11 +75,17 @@ you can find there are 32 layers for llama2 7b weight.
 | norm.weight                     | LM head              |
 | output.weight                   | LM head              |
 
+![image](images/weight-overview.png)
+
+you can see the default data type of weight is bfloat16.
+
 # 2. Operators.
 
-this part will introduce operators that used in llama2 7b model.
+this part will introduce operators that used in LLaMA2-7B model.
 
 ### 2.1 tokenizer.
+
+The LLaMA tokenizer is a BPE model based on sentencepiece.
 
 ### 2.2 embedding.
 
@@ -94,7 +101,7 @@ this part will introduce operators that used in llama2 7b model.
 
 # 3. Inference code.
 
-this part shows the python code of llama2 7b inference.
+this part shows the python code of LLaMA2-7B inference.
 
 ```python
 import torch
