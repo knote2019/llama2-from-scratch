@@ -1,6 +1,8 @@
 # 1. llama2 7b introduction
 ### 1.1 llama2 7b model structure.
 ![image](images/llama2-structure.png)
+NOTE:
+above picture edited with dia (images/llama2-structure.dia), you can download from here: https://sourceforge.net/projects/dia-installer
 
 ### 1.2 llama2 7b model weight download.
 | model site   | download link                                          |
