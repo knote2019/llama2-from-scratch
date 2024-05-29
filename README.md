@@ -311,7 +311,7 @@ from above picture you can see the size of mask is (10, 10).
 
 ![image](images/lm-head-overview.png)
 
-only need to get last row of final_embedding.
+only need to get last row of **final_embedding**.
 
 ***
 # 3. Inference code.
