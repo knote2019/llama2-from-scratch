@@ -150,7 +150,7 @@ you can see **layers.*.attention_norm.weight** is the weight of γ (gamma) in RM
 
 ![image](images/RoPE-overview.png)
 
-above picture shows how RoPE embedded position info into Q and K.
+above picture shows how RoPE embed position info into Q and K.
 
 ```python
 import torch
