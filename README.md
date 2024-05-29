@@ -86,13 +86,15 @@ this part will introduce operators that used in LLaMA2-7B model.
 ### 2.1 tokenizer.
 
 ```python
+import torch
 from sentencepiece import SentencePieceProcessor
 
-tokenizer = SentencePieceProcessor(
-    "/stores/llm_models/llama/Llama-2-7b/tokenizer.model")
+tokenizer = SentencePieceProcessor("/stores/llm_models/llama/Llama-2-7b/tokenizer.model")
 
 input_sentence = "I believe the meaning of life is to be"
 tokens = tokenizer.encode(input_sentence)
+tokens = [tokenizer.bos_id()] + tokens
+tokens = torch.tensor(tokens)
 
 print(f"input_sentence = {input_sentence}")
 print(tokens)
@@ -146,6 +148,10 @@ you can see **layers.*.attention_norm.weight** is the weight of γ (gamma) in RM
 
 ### 2.3 RoPE (Rotary Position Embedding).
 
+![image](images/RoPE-overview.png)
+
+above picture shows how RoPE embedded position info into Q and K.
+
 ```python
 import torch
 
@@ -164,6 +170,47 @@ print(freqs_2)
 ![image](images/freqs-overview.png)
 
 you can see **rope.freqs** in weight file is pre-computed freqs.
+
+```python
+import torch
+
+model = torch.load("/stores/llm_models/llama/Llama-2-7b/consolidated.00.pth")
+freqs = model["rope.freqs"].to(torch.float)
+
+token_length = 10
+
+freqs_for_each_token = torch.outer(torch.arange(token_length), freqs)
+freqs_cis = torch.polar(torch.ones_like(freqs_for_each_token), freqs_for_each_token)
+```
+
+![image](images/freqs_cis-overview.png)
+
+you can see the size of freqs_cis is **(10, 64)**.
+
+```python
+import torch
+from matplotlib import pyplot as plt
+
+model = torch.load("/stores/llm_models/llama/Llama-2-7b/consolidated.00.pth")
+freqs = model["rope.freqs"].to(torch.float)
+
+token_length = 10
+
+freqs_for_each_token = torch.outer(torch.arange(token_length), freqs)
+freqs_cis = torch.polar(torch.ones_like(freqs_for_each_token), freqs_for_each_token)
+
+value = freqs_cis[3]
+plt.figure()
+for i, element in enumerate(value):
+    plt.plot([0, element.real], [0, element.imag], color='blue', linewidth=1, label=f"Index: {i}")
+    plt.annotate(f"{i}", xy=(element.real, element.imag), color='red')
+plt.xlabel('Real')
+plt.ylabel('Imaginary')
+plt.title('freqs_cis (one row)')
+plt.show()
+```
+
+![image](images/freqs-one-row-overview.png)
 
 ### 2.4 MHA (Multi-Headed Attention).
 
@@ -224,8 +271,6 @@ token_embeddings_unnormalized = embedding_layer(tokens).to(torch.bfloat16)
 # --------------------
 # prepare freqs_cis
 # --------------------
-# zero_to_one_split_into_64_parts = torch.tensor(range(64)) / 64
-# freqs = 1.0 / (rope_theta**zero_to_one_split_into_64_parts)
 freqs = model["rope.freqs"].to(torch.float)
 freqs_for_each_token = torch.outer(torch.arange(len(tokens)), freqs)
 freqs_cis = torch.polar(torch.ones_like(freqs_for_each_token), freqs_for_each_token)
