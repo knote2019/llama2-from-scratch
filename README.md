@@ -1,6 +1,6 @@
 # 1. Introduction
 
-official llama2 model defination can be find in https://github.com/meta-llama/llama.
+official llama2 model definition can be find in https://github.com/meta-llama/llama.
 
 this part will introduce structure of llama2 7b model, and also the links to download model weight.
 
