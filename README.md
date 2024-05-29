@@ -241,6 +241,16 @@ from above picture you can see **layers.0.attention.wq.weight** is split into 32
 | q_layer        | (32, 128, 4096) |
 | q_layer_head   | (128, 4096)     |
 
+![image](images/q-k-v-output.png)
+
+| tensor name          | size        |
+|----------------------|-------------|
+| layer_embedding_norm | (10, 4096)  |
+| q_layer_head         | (128, 4096) |
+| q_per_token          | (10, 128)   |
+
+here need transpose q_layer_head due to **q_layer_weight** is torch.nn.Linear's weight.
+
 ### 2.5 FFN (Multi-Headed Attention).
 
 ### 2.6 LM head.
