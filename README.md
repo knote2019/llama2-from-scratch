@@ -1,9 +1,11 @@
+***
 # 1. Introduction
 
 official LLaMA model definition can be find in https://github.com/meta-llama/llama.
 
 this part will introduce structure of LLaMA2-7B model, and also the links to download model weight.
 
+***
 ### 1.1 model structure.
 
 ![image](images/llama2-structure.png)
@@ -12,6 +14,7 @@ above picture edited from images/llama2-structure.dia with **dia image draw tool
 
 you can download **dia image draw tool** from https://sourceforge.net/projects/dia-installer.
 
+***
 ### 1.2 download model.
 
 | site       | download link                                          |
@@ -21,6 +24,7 @@ you can download **dia image draw tool** from https://sourceforge.net/projects/d
 
 from above two site you can download model weight for inference.
 
+***
 ### 1.3 model parameters.
 
 ```python
@@ -79,10 +83,12 @@ you can find there are **32** layers for LLaMA2-7B weight.
 
 you can see the default data type of weight is **bfloat16**.
 
+***
 # 2. Operators.
 
 this part will introduce operators that used in LLaMA2-7B model.
 
+***
 ### 2.1 tokenizer.
 
 ```python
@@ -104,6 +110,7 @@ print(tokens)
 
 The LLaMA tokenizer is a **BPE** model based on **sentencepiece**.
 
+***
 ### 2.2 embedding.
 
 ```python
@@ -120,6 +127,7 @@ embedding_layer.weight.data.copy_(model["tok_embeddings.weight"])
 
 ![image](images/embbedding-overview.png)
 
+***
 ### 2.3 RMS (Root Mean Square Normalization).
 
 ![image](images/dia-picture/RMS.png)
@@ -146,12 +154,15 @@ print(y)
 
 you can see **layers.*.attention_norm.weight** is the weight of γ (gamma) in RMS formula.
 
+***
 ### 2.3 RoPE (Rotary Position Embedding).
 
 ![image](images/RoPE-overview.png)
 
 above picture shows how RoPE embed position info into Q and K.
 
+***
+### rope.freqs
 ```python
 import torch
 
@@ -212,6 +223,7 @@ plt.show()
 
 ![image](images/freqs-one-row-overview.png)
 
+***
 ### 2.4 MHA (Multi-Headed Attention).
 
 ```python
@@ -251,10 +263,13 @@ from above picture you can see **layers.0.attention.wq.weight** is split into 32
 
 here need transpose q_layer_head due to **q_layer_weight** is torch.nn.Linear's weight.
 
+***
 ### 2.5 FFN (Multi-Headed Attention).
 
+***
 ### 2.6 LM head.
 
+***
 # 3. Inference code.
 
 this part shows the python code of LLaMA2-7B inference.
