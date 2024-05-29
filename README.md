@@ -146,6 +146,25 @@ you can see **layers.*.attention_norm.weight** is the weight of γ (gamma) in RM
 
 ### 2.3 RoPE (Rotary Position Embedding).
 
+```python
+import torch
+
+rope_theta = 10000.0
+
+zero_to_one_split_into_64_parts = torch.tensor(range(64)) / 64
+freqs_1 = 1.0 / (rope_theta**zero_to_one_split_into_64_parts)
+
+model = torch.load("/stores/llm_models/llama/Llama-2-7b/consolidated.00.pth")
+freqs_2 = model["rope.freqs"].to(torch.float)
+
+print(freqs_1)
+print(freqs_2)
+```
+
+![image](images/freqs-overview.png)
+
+you can see **rope.freqs** in weight file is pre-computed freqs.
+
 ### 2.4 MHA (Multi-Headed Attention).
 
 ### 2.5 FFN (Multi-Headed Attention).
