@@ -294,10 +294,24 @@ here need transpose q_layer_head due to **q_layer_weight** is torch.nn.Linear's 
 from above picture you can see the size of mask is (10, 10).
 
 ***
-### 2.6 FFN (Multi-Headed Attention).
+### 2.6 FFN (Feed Forward Network).
+
+![image](images/dia-picture/FF.png)
+
+![image](images/ffn-overview.png)
+
+| operator name | weight name |
+|---------------|-------------|
+| gate          | w1          |
+| down          | w2          |
+| up            | w3          |
 
 ***
 ### 2.7 LM head.
+
+![image](images/lm-head-overview.png)
+
+only need to get last row of final_embedding.
 
 ***
 # 3. Inference code.
