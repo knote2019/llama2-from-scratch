@@ -85,6 +85,21 @@ this part will introduce operators that used in LLaMA2-7B model.
 
 ### 2.1 tokenizer.
 
+```python
+from sentencepiece import SentencePieceProcessor
+
+tokenizer = SentencePieceProcessor(
+    "/stores/llm_models/llama/Llama-2-7b/tokenizer.model")
+
+input_sentence = "I believe the meaning of life is to be"
+tokens = tokenizer.encode(input_sentence)
+
+print(f"input_sentence = {input_sentence}")
+print(tokens)
+```
+
+![image](images/tokenizer-overview.png)
+
 The LLaMA tokenizer is a BPE model based on sentencepiece.
 
 ### 2.2 embedding.
