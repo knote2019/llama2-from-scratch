@@ -95,7 +95,7 @@ freqs_for_each_token = torch.outer(torch.arange(len(tokens)), freqs)
 freqs_cis = torch.polar(torch.ones_like(freqs_for_each_token), freqs_for_each_token)
 
 # --------------------
-# Transformer Layer
+# Transformer Layers
 # --------------------
 final_embedding = token_embeddings_unnormalized
 for layer in range(n_layers):
