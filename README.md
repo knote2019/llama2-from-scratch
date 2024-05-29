@@ -10,9 +10,7 @@ this part will introduce structure of llama2 7b model, and also the links to dow
 
 above picture edited from images/llama2-structure.dia with dia image draw tool. 
 
-you can download dia image draw tool from here: 
-
-https://sourceforge.net/projects/dia-installer
+you can download dia image draw tool from https://sourceforge.net/projects/dia-installer.
 
 ### 1.2 download model.
 
