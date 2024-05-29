@@ -1,4 +1,4 @@
-# 1. llama2 7b introduction
+# 1. Introduction
 
 this part will introduce structure of llama2 7b model, and also the links to download model weight.
 
@@ -17,7 +17,7 @@ from below two site you can download model weight for inference.
 | gitee      | https://ai.gitee.com/hf-models/meta-llama/Llama-2-7b   |
 | modelscope | https://www.modelscope.cn/models/shakechen/Llama-2-7b  |
 
-# 2. llama2 7b operators.
+# 2. Operators.
 
 this part will introduce operators that used in llama2 7b model.
 
@@ -35,9 +35,9 @@ this part will introduce operators that used in llama2 7b model.
 
 ### 2.6 LM head.
 
-# 3. llama2 7b inference code.
+# 3. Inference code.
 
-this part shows the python code of whole inference progress.
+this part shows the python code of llama2 7b inference.
 
 ```python
 import torch
