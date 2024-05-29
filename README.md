@@ -10,10 +10,6 @@ this part will introduce structure of LLaMA2-7B model, and also the links to dow
 
 ![image](images/llama2-structure.png)
 
-above picture edited from images/llama2-structure.dia with **dia image draw tool**. 
-
-you can download **dia image draw tool** from https://sourceforge.net/projects/dia-installer.
-
 ***
 ### 1.2 download model.
 
@@ -130,7 +126,7 @@ embedding_layer.weight.data.copy_(model["tok_embeddings.weight"])
 ***
 ### 2.3 RMS (Root Mean Square Normalization).
 
-![image](images/dia-picture/RMS.png)
+![image](images/RMS-formula.png)
 
 ```python
 import torch
@@ -296,7 +292,7 @@ from above picture you can see the size of mask is (10, 10).
 ***
 ### 2.6 FFN (Feed Forward Network).
 
-![image](images/dia-picture/FF.png)
+![image](images/FF-formula.png)
 
 ![image](images/ffn-overview.png)
 
