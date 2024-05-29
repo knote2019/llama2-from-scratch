@@ -104,6 +104,20 @@ The LLaMA tokenizer is a BPE model based on sentencepiece.
 
 ### 2.2 embedding.
 
+```python
+import torch
+
+dim = 4096
+vocab_size = 32000
+
+model = torch.load("/stores/llm_models/llama/Llama-2-7b/consolidated.00.pth")
+
+embedding_layer = torch.nn.Embedding(vocab_size, dim)
+embedding_layer.weight.data.copy_(model["tok_embeddings.weight"])
+```
+
+![image](images/embbedding-overview.png)
+
 ### 2.3 RMS (Root Mean Square Normalization).
 
 ### 2.3 RoPE (Rotary Position Embedding).
