@@ -120,6 +120,28 @@ embedding_layer.weight.data.copy_(model["tok_embeddings.weight"])
 
 ### 2.3 RMS (Root Mean Square Normalization).
 
+![image](images/dia-picture/RMS.png)
+
+```python
+import torch
+
+norm_eps = 1e-05
+
+def rms_norm(x, norm_weights):
+    return (x * torch.rsqrt(x.pow(2).mean(-1, keepdim=True) + torch.tensor(norm_eps))) * norm_weights
+
+model = torch.load("/stores/llm_models/llama/Llama-2-7b/consolidated.00.pth")
+layer = 0
+norm_weights = model[f"layers.{layer}.attention_norm.weight"]
+x = torch.rand((3, 4096))
+y = rms_norm(x, norm_weights)
+
+print(x)
+print(y)
+```
+
+![image](images/rms-overview.png)
+
 ### 2.3 RoPE (Rotary Position Embedding).
 
 ### 2.4 MHA (Multi-Headed Attention).
