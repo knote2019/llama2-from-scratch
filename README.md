@@ -311,14 +311,18 @@ for layer in range(n_layers):
     # MHA
     # -------
     qkv_attention_store = []
+
     layer_embedding_norm = rms_norm(final_embedding, model[f"layers.{layer}.attention_norm.weight"]).to(torch.bfloat16)
-    q_layer = model[f"layers.{layer}.attention.wq.weight"]
-    q_layer = q_layer.view(n_heads, q_layer.shape[0] // n_heads, dim)
-    k_layer = model[f"layers.{layer}.attention.wk.weight"]
-    k_layer = k_layer.view(n_kv_heads, k_layer.shape[0] // n_kv_heads, dim)
-    v_layer = model[f"layers.{layer}.attention.wv.weight"]
-    v_layer = v_layer.view(n_kv_heads, v_layer.shape[0] // n_kv_heads, dim)
-    w_layer = model[f"layers.{layer}.attention.wo.weight"]
+
+    q_layer_weight = model[f"layers.{layer}.attention.wq.weight"]
+    k_layer_weight = model[f"layers.{layer}.attention.wk.weight"]
+    v_layer_weight = model[f"layers.{layer}.attention.wv.weight"]
+    w_layer_weight = model[f"layers.{layer}.attention.wo.weight"]
+
+    q_layer = q_layer_weight.view(n_heads, q_layer_weight.shape[0] // n_heads, dim)
+    k_layer = k_layer_weight.view(n_kv_heads, k_layer_weight.shape[0] // n_kv_heads, dim)
+    v_layer = v_layer_weight.view(n_kv_heads, v_layer_weight.shape[0] // n_kv_heads, dim)
+
     for head in range(n_heads):
         q_layer_head = q_layer[head]
         k_layer_head = k_layer[head]
