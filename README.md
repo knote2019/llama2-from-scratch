@@ -142,6 +142,8 @@ print(y)
 
 ![image](images/rms-overview.png)
 
+you can see "layers.*.attention_norm.weight" is the weight of γ (gamma) in RMS formula.
+
 ### 2.3 RoPE (Rotary Position Embedding).
 
 ### 2.4 MHA (Multi-Headed Attention).
@@ -174,8 +176,8 @@ tokenizer = SentencePieceProcessor("/stores/llm_models/llama/Llama-2-7b/tokenize
 model = torch.load("/stores/llm_models/llama/Llama-2-7b/consolidated.00.pth")
 
 
-def rms_norm(tensor, norm_weights):
-    return (tensor * torch.rsqrt(tensor.pow(2).mean(-1, keepdim=True) + torch.tensor(norm_eps))) * norm_weights
+def rms_norm(x, norm_weights):
+    return (x * torch.rsqrt(x.pow(2).mean(-1, keepdim=True) + torch.tensor(norm_eps))) * norm_weights
 
 
 # ----------------------------------------------------------------------------------------------------------------------
