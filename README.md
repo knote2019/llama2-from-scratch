@@ -232,6 +232,9 @@ plt.show()
 ***
 ### 2.5 MHA (Multi-Headed Attention).
 
+***
+##### q_layer_head
+
 ```python
 import torch
 
@@ -259,6 +262,9 @@ from above picture you can see **layers.0.attention.wq.weight** is split into 32
 | q_layer        | (32, 128, 4096) |
 | q_layer_head   | (128, 4096)     |
 
+***
+##### q_per_token
+
 ![image](images/q-k-v-output.png)
 
 | tensor name          | size        |
@@ -268,6 +274,24 @@ from above picture you can see **layers.0.attention.wq.weight** is split into 32
 | q_per_token          | (10, 128)   |
 
 here need transpose q_layer_head due to **q_layer_weight** is torch.nn.Linear's weight.
+
+***
+##### mask
+
+![image](images/mask-overview.png)
+
+    tensor([[0., -inf, -inf, -inf, -inf, -inf, -inf, -inf, -inf, -inf],
+            [0., 0., -inf, -inf, -inf, -inf, -inf, -inf, -inf, -inf],
+            [0., 0., 0., -inf, -inf, -inf, -inf, -inf, -inf, -inf],
+            [0., 0., 0., 0., -inf, -inf, -inf, -inf, -inf, -inf],
+            [0., 0., 0., 0., 0., -inf, -inf, -inf, -inf, -inf],
+            [0., 0., 0., 0., 0., 0., -inf, -inf, -inf, -inf],
+            [0., 0., 0., 0., 0., 0., 0., -inf, -inf, -inf],
+            [0., 0., 0., 0., 0., 0., 0., 0., -inf, -inf],
+            [0., 0., 0., 0., 0., 0., 0., 0., 0., -inf],
+            [0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]])
+
+from above picture you can see the size of mask is (10, 10).
 
 ***
 ### 2.6 FFN (Multi-Headed Attention).
