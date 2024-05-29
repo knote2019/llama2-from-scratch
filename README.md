@@ -155,14 +155,14 @@ print(y)
 you can see **layers.*.attention_norm.weight** is the weight of γ (gamma) in RMS formula.
 
 ***
-### 2.3 RoPE (Rotary Position Embedding).
+### 2.4 RoPE (Rotary Position Embedding).
 
 ![image](images/RoPE-overview.png)
 
 above picture shows how RoPE embed position info into Q and K.
 
 ***
-### rope.freqs
+##### rope.freqs
 ```python
 import torch
 
@@ -182,6 +182,9 @@ print(freqs_2)
 
 you can see **rope.freqs** in weight file is pre-computed freqs.
 
+***
+##### freqs_cis
+
 ```python
 import torch
 
@@ -197,6 +200,9 @@ freqs_cis = torch.polar(torch.ones_like(freqs_for_each_token), freqs_for_each_to
 ![image](images/freqs_cis-overview.png)
 
 you can see the size of freqs_cis is **(10, 64)**.
+
+***
+##### freqs_cis one row plot image.
 
 ```python
 import torch
@@ -224,7 +230,7 @@ plt.show()
 ![image](images/freqs-one-row-overview.png)
 
 ***
-### 2.4 MHA (Multi-Headed Attention).
+### 2.5 MHA (Multi-Headed Attention).
 
 ```python
 import torch
@@ -264,10 +270,10 @@ from above picture you can see **layers.0.attention.wq.weight** is split into 32
 here need transpose q_layer_head due to **q_layer_weight** is torch.nn.Linear's weight.
 
 ***
-### 2.5 FFN (Multi-Headed Attention).
+### 2.6 FFN (Multi-Headed Attention).
 
 ***
-### 2.6 LM head.
+### 2.7 LM head.
 
 ***
 # 3. Inference code.
