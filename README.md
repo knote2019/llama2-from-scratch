@@ -214,6 +214,33 @@ plt.show()
 
 ### 2.4 MHA (Multi-Headed Attention).
 
+```python
+import torch
+
+model = torch.load("/stores/llm_models/llama/Llama-2-7b/consolidated.00.pth")
+
+dim = 4096
+n_heads = 32
+
+layer = 0
+head = 0
+
+q_layer_weight = model[f"layers.{layer}.attention.wq.weight"]
+q_layer = q_layer_weight.view(n_heads, q_layer_weight.shape[0] // n_heads, dim)
+
+q_layer_head = q_layer[head]
+```
+
+![image](images/get-layer0-head0-q-weight.png)
+
+from above picture you can see **layers.0.attention.wq.weight** is split into 32 parts.
+
+| tensor name    | size            |
+|----------------|-----------------|
+| q_layer_weight | (4096, 4096)    |
+| q_layer        | (32, 128, 4096) |
+| q_layer_head   | (128, 4096)     |
+
 ### 2.5 FFN (Multi-Headed Attention).
 
 ### 2.6 LM head.
