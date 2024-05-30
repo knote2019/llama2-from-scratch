@@ -10,6 +10,8 @@ this part will introduce structure of LLaMA2-7B model, and also the links to dow
 
 ![image](images/MHA-Model.jpg)
 
+***
+
 ![image](images/llama2-structure.png)
 
 ***
