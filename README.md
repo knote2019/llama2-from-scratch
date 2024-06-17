@@ -8,11 +8,11 @@ this part will introduce structure of LLaMA2-7B model, and also the links to dow
 ***
 ### 1.1 model structure.
 
-![image](images/MHA-Model.jpg)
+![image](.README_images/MHA-Model.jpg)
 
 ***
 
-![image](images/llama2-structure.png)
+![image](.README_images/llama2-structure.png)
 
 ***
 ### 1.2 download model.
@@ -79,7 +79,7 @@ you can find there are **32** layers for LLaMA2-7B weight.
 | norm.weight                     | LM head              |
 | output.weight                   | LM head              |
 
-![image](images/weight-overview.png)
+![image](.README_images/weight-overview.png)
 
 you can see the default data type of weight is **bfloat16**.
 
@@ -106,7 +106,7 @@ print(f"input_sentence = {input_sentence}")
 print(tokens)
 ```
 
-![image](images/tokenizer-overview.png)
+![image](.README_images/tokenizer-overview.png)
 
 The LLaMA tokenizer is a **BPE** model based on **sentencepiece**.
 
@@ -125,12 +125,12 @@ embedding_layer = torch.nn.Embedding(vocab_size, dim)
 embedding_layer.weight.data.copy_(model["tok_embeddings.weight"])
 ```
 
-![image](images/embbedding-overview.png)
+![image](.README_images/embbedding-overview.png)
 
 ***
 ### 2.3 RMS (Root Mean Square Normalization).
 
-![image](images/RMS-formula.png)
+![image](.README_images/RMS-formula.png)
 
 ```python
 import torch
@@ -150,14 +150,14 @@ print(x)
 print(y)
 ```
 
-![image](images/rms-overview.png)
+![image](.README_images/rms-overview.png)
 
 you can see **layers.*.attention_norm.weight** is the weight of γ (gamma) in RMS formula.
 
 ***
 ### 2.4 RoPE (Rotary Position Embedding).
 
-![image](images/RoPE-overview.png)
+![image](.README_images/RoPE-overview.png)
 
 above picture shows how RoPE embed position info into Q and K.
 
@@ -178,7 +178,7 @@ print(freqs_1)
 print(freqs_2)
 ```
 
-![image](images/freqs-overview.png)
+![image](.README_images/freqs-overview.png)
 
 you can see **rope.freqs** in weight file is pre-computed freqs.
 
@@ -197,7 +197,7 @@ freqs_for_each_token = torch.outer(torch.arange(token_length), freqs)
 freqs_cis = torch.polar(torch.ones_like(freqs_for_each_token), freqs_for_each_token)
 ```
 
-![image](images/freqs_cis-overview.png)
+![image](.README_images/freqs_cis-overview.png)
 
 you can see the size of freqs_cis is **(10, 64)**.
 
@@ -227,7 +227,7 @@ plt.title('freqs_cis (one row)')
 plt.show()
 ```
 
-![image](images/freqs-one-row-overview.png)
+![image](.README_images/freqs-one-row-overview.png)
 
 ***
 ### 2.5 MHA (Multi-Headed Attention).
@@ -252,7 +252,7 @@ q_layer = q_layer_weight.view(n_heads, q_layer_weight.shape[0] // n_heads, dim)
 q_layer_head = q_layer[head]
 ```
 
-![image](images/get-layer0-head0-q-weight.png)
+![image](.README_images/get-layer0-head0-q-weight.png)
 
 from above picture you can see **layers.0.attention.wq.weight** is split into 32 parts.
 
@@ -265,7 +265,7 @@ from above picture you can see **layers.0.attention.wq.weight** is split into 32
 ***
 ##### q_per_token
 
-![image](images/q-k-v-output.png)
+![image](.README_images/q-k-v-output.png)
 
 | tensor name          | size        |
 |----------------------|-------------|
@@ -278,7 +278,7 @@ here need transpose q_layer_head due to **q_layer_weight** is torch.nn.Linear's 
 ***
 ##### mask
 
-![image](images/mask-overview.png)
+![image](.README_images/mask-overview.png)
 
     tensor([[0., -inf, -inf, -inf, -inf, -inf, -inf, -inf, -inf, -inf],
             [0., 0., -inf, -inf, -inf, -inf, -inf, -inf, -inf, -inf],
@@ -296,9 +296,9 @@ from above picture you can see the size of mask is (10, 10).
 ***
 ### 2.6 FFN (Feed Forward Network).
 
-![image](images/FF-formula.png)
+![image](.README_images/FF-formula.png)
 
-![image](images/ffn-overview.png)
+![image](.README_images/ffn-overview.png)
 
 | operator name | weight name |
 |---------------|-------------|
@@ -309,7 +309,7 @@ from above picture you can see the size of mask is (10, 10).
 ***
 ### 2.7 LM head.
 
-![image](images/lm-head-overview.png)
+![image](.README_images/lm-head-overview.png)
 
 only need to get last row of **final_embedding**.
 
