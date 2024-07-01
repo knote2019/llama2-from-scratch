@@ -8,6 +8,8 @@ this part will introduce structure of LLaMA2-7B model, and also the links to dow
 ***
 ### 1.1 model structure.
 
+![image](.README_images/gpt-vs-llama.png)
+
 ***
 
 ![image](.README_images/llama2-structure.png)
