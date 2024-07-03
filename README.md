@@ -456,5 +456,7 @@ print(f"next_word = {next_word}")
 
 # 4. reference.
 https://github.com/meta-llama/llama
+
 https://github.com/naklecha/llama3-from-scratch
+
 https://github.com/wdndev/llama3-from-scratch-zh
