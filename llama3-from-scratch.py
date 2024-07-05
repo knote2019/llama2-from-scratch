@@ -7,7 +7,7 @@ from tokenizers import Tokenizer
 hidden_size = 4096
 q_heads = 32
 kv_heads = 8
-kv_head_size = q_heads // kv_heads
+GQA = q_heads // kv_heads
 norm_eps = 1e-05
 rope_theta = 500000
 vocab_size = 128256
@@ -76,8 +76,8 @@ for layer_index in range(layers):
     qkv_attention_list = []
     for head in range(q_heads):
         wq_head = wq[head].T
-        wk_head = wk[head // kv_head_size].T
-        wv_head = wv[head // kv_head_size].T
+        wk_head = wk[head // GQA].T
+        wv_head = wv[head // GQA].T
 
         q = torch.matmul(mha_rms_norm_output, wq_head)
         k = torch.matmul(mha_rms_norm_output, wk_head)
