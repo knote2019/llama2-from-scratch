@@ -4,7 +4,7 @@
 
 official LLaMA model definition can be find in https://github.com/meta-llama/llama.
 
-this part will introduce structure of LLaMA2-7B model, and also the links to download model weight.
+this part will introduce structure of LLaMA2-7B model and also the links to download model weight.
 
 ***
 
