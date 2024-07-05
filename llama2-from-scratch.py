@@ -1,130 +1,132 @@
 import torch
-
-from sentencepiece import SentencePieceProcessor
+from safetensors import safe_open
+from tokenizers import Tokenizer
 
 # ----------------------------------------------------------------------------------------------------------------------
 # llama2 7b parameters.
-dim = 4096
-vocab_size = 32000
+hidden_size = 4096
+q_heads = 32
+kv_heads = 32
+kv_head_size = q_heads // kv_heads
 norm_eps = 1e-05
-n_heads = 32
-n_kv_heads = 32
-n_layers = 32
 rope_theta = 10000.0
+vocab_size = 32000
+layers = 32
 
 # ----------------------------------------------------------------------------------------------------------------------
-tokenizer = SentencePieceProcessor("/stores/llm_models/llama/Llama-2-7b/tokenizer.model")
-model = torch.load("/stores/llm_models/llama/Llama-2-7b/consolidated.00.pth")
+tokenizer = Tokenizer.from_file("/stores/llm_models/llama/Llama-2-7b-hf/tokenizer.json")
+model = {}
+for i in range(1, 3):
+    with safe_open(f"/stores/llm_models/llama/Llama-2-7b-hf/model-0000{i}-of-00002.safetensors", framework="pt") as f:
+        for k in f.keys():
+            model[k] = f.get_tensor(k)
+
+# ----------------------------------------------------------------------------------------------------------------------
+# input.
+input_sentence = "I believe the meaning of life is to be"
+print(f"input_sentence = {input_sentence}")
+tokens = tokenizer.encode(input_sentence).ids
+tokens = torch.tensor(tokens)
+
+# embedding.
+embedding = torch.nn.Embedding(vocab_size, hidden_size, dtype=torch.float)
+embedding.weight.data.copy_(model["model.embed_tokens.weight"].to(torch.float))
+embedding_output = embedding(tokens)
 
 
+# rms_norm.
 def rms_norm(x, norm_weights):
     return (x * torch.rsqrt(x.pow(2).mean(-1, keepdim=True) + torch.tensor(norm_eps))) * norm_weights
 
 
-# ----------------------------------------------------------------------------------------------------------------------
-# --------------------
-# Input
-# --------------------
-input_sentence = "I believe the meaning of life is to be"
-print(f"input_sentence = {input_sentence}")
+# rope.
+def rope(x):
+    token_length = x.shape[0]
+    zero_to_one_split_into_64_parts = torch.tensor(range(64)) / 64
+    freqs = 1.0 / (rope_theta ** zero_to_one_split_into_64_parts)
+    freqs_for_each_token = torch.outer(torch.arange(token_length), freqs)
+    freqs_cis = torch.polar(torch.ones_like(freqs_for_each_token), freqs_for_each_token)
+    # rope.
+    pairs = x.float().view(x.shape[0], -1, 2)
+    complex_numbers = torch.view_as_complex(pairs)
+    pairs_rotated = torch.view_as_real(complex_numbers * freqs_cis)
+    x_rotated = pairs_rotated.view(x.shape)
+    return x_rotated
 
-tokens = tokenizer.encode(input_sentence)
-tokens = [tokenizer.bos_id()] + tokens
-tokens = torch.tensor(tokens)
-
-# --------------------
-# Embedding Layer
-# --------------------
-embedding_layer = torch.nn.Embedding(vocab_size, dim)
-embedding_layer.weight.data.copy_(model["tok_embeddings.weight"])
-token_embeddings_unnormalized = embedding_layer(tokens).to(torch.bfloat16)
 
 # --------------------
-# prepare freqs_cis
+# transformer layers.
 # --------------------
-# freqs = model["rope.freqs"].to(torch.float)
-zero_to_one_split_into_64_parts = torch.tensor(range(64)) / 64
-freqs = 1.0 / (rope_theta ** zero_to_one_split_into_64_parts)
-freqs_for_each_token = torch.outer(torch.arange(len(tokens)), freqs)
-freqs_cis = torch.polar(torch.ones_like(freqs_for_each_token), freqs_for_each_token)
-
-# --------------------
-# Transformer Layers
-# --------------------
-final_embedding = token_embeddings_unnormalized
-for layer in range(n_layers):
+transformer_output = embedding_output
+for layer_index in range(layers):
     # -------
-    # MHA
+    # MHA.
     # -------
-    qkv_attention_store = []
+    mha_rms_norm_weight = model[f"model.layers.{layer_index}.input_layernorm.weight"].to(torch.float)
+    mha_rms_norm_output = rms_norm(transformer_output, mha_rms_norm_weight)
 
-    layer_embedding_norm = rms_norm(final_embedding, model[f"layers.{layer}.attention_norm.weight"]).to(torch.bfloat16)
+    wq = model[f"model.layers.{layer_index}.self_attn.q_proj.weight"].to(torch.float)
+    wk = model[f"model.layers.{layer_index}.self_attn.k_proj.weight"].to(torch.float)
+    wv = model[f"model.layers.{layer_index}.self_attn.v_proj.weight"].to(torch.float)
 
-    q_layer_weight = model[f"layers.{layer}.attention.wq.weight"]
-    k_layer_weight = model[f"layers.{layer}.attention.wk.weight"]
-    v_layer_weight = model[f"layers.{layer}.attention.wv.weight"]
+    wq = wq.view(q_heads, wq.shape[0] // q_heads, hidden_size)
+    wk = wk.view(kv_heads, wk.shape[0] // kv_heads, hidden_size)
+    wv = wv.view(kv_heads, wv.shape[0] // kv_heads, hidden_size)
 
-    q_layer = q_layer_weight.view(n_heads, q_layer_weight.shape[0] // n_heads, dim)
-    k_layer = k_layer_weight.view(n_kv_heads, k_layer_weight.shape[0] // n_kv_heads, dim)
-    v_layer = v_layer_weight.view(n_kv_heads, v_layer_weight.shape[0] // n_kv_heads, dim)
+    qkv_attention_list = []
+    for head in range(q_heads):
+        wq_head = wq[head].T
+        wk_head = wk[head // kv_head_size].T
+        wv_head = wv[head // kv_head_size].T
 
-    for head in range(n_heads):
-        q_layer_head = q_layer[head]
-        k_layer_head = k_layer[head]
-        v_layer_head = v_layer[head]
+        q = torch.matmul(mha_rms_norm_output, wq_head)
+        k = torch.matmul(mha_rms_norm_output, wk_head)
+        v = torch.matmul(mha_rms_norm_output, wv_head)
 
-        q_per_token = torch.matmul(layer_embedding_norm, q_layer_head.T)
-        k_per_token = torch.matmul(layer_embedding_norm, k_layer_head.T)
-        v_per_token = torch.matmul(layer_embedding_norm, v_layer_head.T)
+        q_rope = rope(q)
+        k_rope = rope(k)
 
-        # q rope.
-        q_per_token_split_into_pairs = q_per_token.float().view(q_per_token.shape[0], -1, 2)
-        q_per_token_as_complex_numbers = torch.view_as_complex(q_per_token_split_into_pairs)
-        q_per_token_split_into_pairs_rotated = torch.view_as_real(q_per_token_as_complex_numbers * freqs_cis)
-        q_per_token_rotated = q_per_token_split_into_pairs_rotated.view(q_per_token.shape)
-
-        # k rope.
-        k_per_token_split_into_pairs = k_per_token.float().view(k_per_token.shape[0], -1, 2)
-        k_per_token_as_complex_numbers = torch.view_as_complex(k_per_token_split_into_pairs)
-        k_per_token_split_into_pairs_rotated = torch.view_as_real(k_per_token_as_complex_numbers * freqs_cis)
-        k_per_token_rotated = k_per_token_split_into_pairs_rotated.view(k_per_token.shape)
-
-        qk_per_token = torch.matmul(q_per_token_rotated, k_per_token_rotated.T) / (128 ** 0.5)
-        mask = torch.full((len(token_embeddings_unnormalized), len(token_embeddings_unnormalized)), float("-inf"))
+        # dot production attention.
+        qk = torch.matmul(q_rope, k_rope.T) / (128 ** 0.5)
+        mask = torch.full(qk.shape, float("-inf"))
         mask = torch.triu(mask, diagonal=1)
-        qk_per_token_after_masking = qk_per_token + mask
-        qk_per_token_after_masking_after_softmax = torch.nn.functional.softmax(qk_per_token_after_masking,
-                                                                               dim=1).to(torch.bfloat16)
-        qkv_attention = torch.matmul(qk_per_token_after_masking_after_softmax, v_per_token)
-        qkv_attention_store.append(qkv_attention)
+        qk_masked = qk + mask
+        qk_masked_softmax = torch.nn.functional.softmax(qk_masked, dim=1)
+        qkv_attention = torch.matmul(qk_masked_softmax, v)
 
-    stacked_qkv_attention = torch.cat(qkv_attention_store, dim=-1)
+        # append.
+        qkv_attention_list.append(qkv_attention)
 
-    w_layer = model[f"layers.{layer}.attention.wo.weight"]
-    embedding_delta = torch.matmul(stacked_qkv_attention, w_layer.T)
+    qkv_attention_all = torch.cat(qkv_attention_list, dim=-1)
 
-    embedding_after_edit = final_embedding + embedding_delta
+    wo = model[f"model.layers.{layer_index}.self_attn.o_proj.weight"].to(torch.float)
+    mha_output = torch.matmul(qkv_attention_all, wo.T)
+
+    mha_output_with_residual = mha_output + transformer_output
 
     # -------
-    # FFN
+    # FFN.
     # -------
-    embedding_after_edit_normalized = rms_norm(embedding_after_edit,
-                                               model[f"layers.{layer}.ffn_norm.weight"]).to(torch.bfloat16)
-    w1 = model[f"layers.{layer}.feed_forward.w1.weight"]
-    w2 = model[f"layers.{layer}.feed_forward.w2.weight"]
-    w3 = model[f"layers.{layer}.feed_forward.w3.weight"]
-    output_after_feedforward = torch.matmul(
-        torch.functional.F.silu(torch.matmul(embedding_after_edit_normalized, w1.T)) *
-        torch.matmul(embedding_after_edit_normalized, w3.T), w2.T)
-    final_embedding = embedding_after_edit + output_after_feedforward
+    ffn_rms_norm_weight = model[f"model.layers.{layer_index}.post_attention_layernorm.weight"].to(torch.float)
+    ffn_rms_norm_output = rms_norm(mha_output_with_residual, ffn_rms_norm_weight)
+
+    w_up = model[f"model.layers.{layer_index}.mlp.up_proj.weight"].T.to(torch.float)
+    w_gate = model[f"model.layers.{layer_index}.mlp.gate_proj.weight"].T.to(torch.float)
+    w_down = model[f"model.layers.{layer_index}.mlp.down_proj.weight"].T.to(torch.float)
+
+    up = torch.matmul(ffn_rms_norm_output, w_up)
+    gate = torch.functional.F.silu(torch.matmul(ffn_rms_norm_output, w_gate))
+    ffn_output = torch.matmul(up * gate, w_down)
+
+    transformer_output = ffn_output + mha_output_with_residual
 
 # --------------------
 # Post Process
 # --------------------
-final_embedding = rms_norm(final_embedding, model["norm.weight"]).to(torch.bfloat16)
-logits = torch.matmul(final_embedding[-1], model["output.weight"].T)
+output_rms_norm = rms_norm(transformer_output, model["model.norm.weight"]).to(torch.float)
+logits = torch.matmul(output_rms_norm[-1], model["lm_head.weight"].T.to(torch.float))
 
 # decode last token.
 next_token = torch.argmax(logits, dim=-1)
 next_word = tokenizer.decode([next_token.item()])
-print(f"next_word = {next_word}")
+print(f"next_word = '{next_word}'")

@@ -4,26 +4,25 @@
 
 official LLaMA model definition can be find in https://github.com/meta-llama/llama.
 
-this part will introduce structure of LLaMA2-7B model and also the links to download model weight.
+this part will introduce structure of **LLaMA2-7B** model and also the links to download model weight.
 
 ***
 
 ### 1.1 model structure.
 
-![image](llama2-dia/gpt-vs-llama.png)
+![](llama2-dia/gpt-vs-llama.png)
 
 ***
 
-![image](llama2-dia/llama2-structure.png)
+![](llama2-dia/llama2-structure.png)
 
 ***
 
 ### 1.2 download model.
 
-| site       | download link                                         |
-|------------|-------------------------------------------------------|
-| gitee      | https://ai.gitee.com/hf-models/meta-llama/Llama-2-7b  |
-| modelscope | https://www.modelscope.cn/models/shakechen/Llama-2-7b |
+| site       | download link                                            |
+|------------|----------------------------------------------------------|
+| modelscope | https://www.modelscope.cn/models/shakechen/Llama-2-7b-hf |
 
 from above two site you can download model weight for inference.
 
@@ -32,60 +31,58 @@ from above two site you can download model weight for inference.
 ### 1.3 model parameters.
 
 ```python
-import json
-import torch
+from safetensors import safe_open
 
-model = torch.load("/stores/llm_models/llama/Llama-2-7b/consolidated.00.pth")
-print(json.dumps(list(model.keys()), indent=4))
+for i in range(1, 3):
+    with safe_open(f"/stores/llm_models/llama/Llama-2-7b-hf/model-0000{i}-of-00002.safetensors", framework="pt") as f:
+        for k in f.keys():
+            print(k)
 ```
 
-    [
-        "tok_embeddings.weight",
-        "norm.weight",
-        "output.weight",
-        "layers.0.attention.wq.weight",
-        "layers.0.attention.wk.weight",
-        "layers.0.attention.wv.weight",
-        "layers.0.attention.wo.weight",
-        "layers.0.feed_forward.w1.weight",
-        "layers.0.feed_forward.w2.weight",
-        "layers.0.feed_forward.w3.weight",
-        "layers.0.attention_norm.weight",
-        "layers.0.ffn_norm.weight",
-        ...
-        "layers.31.attention.wq.weight",
-        "layers.31.attention.wk.weight",
-        "layers.31.attention.wv.weight",
-        "layers.31.attention.wo.weight",
-        "layers.31.feed_forward.w1.weight",
-        "layers.31.feed_forward.w2.weight",
-        "layers.31.feed_forward.w3.weight",
-        "layers.31.attention_norm.weight",
-        "layers.31.ffn_norm.weight",
-        "rope.freqs"
-    ]
+    model.embed_model.embed_tokens.weight
+    ...
+    model.layers.0.input_layernorm.weight
+    model.layers.0.self_attn.q_proj.weight
+    model.layers.0.self_attn.k_proj.weight
+    model.layers.0.self_attn.v_proj.weight
+    model.layers.0.self_attn.o_proj.weight
+    model.layers.0.post_attention_layernorm.weight
+    model.layers.0.mlp.up_proj.weight
+    model.layers.0.mlp.gate_proj.weight
+    model.layers.0.mlp.down_proj.weight
+    ...
+    model.layers.31.input_layernorm.weight
+    model.layers.31.self_attn.q_proj.weight
+    model.layers.31.self_attn.k_proj.weight
+    model.layers.31.self_attn.v_proj.weight
+    model.layers.31.self_attn.o_proj.weight
+    model.layers.31.post_attention_layernorm.weight
+    model.layers.31.mlp.up_proj.weight
+    model.layers.31.mlp.gate_proj.weight
+    model.layers.31.mlp.down_proj.weight
+    ...
+    model.norm.weight
+    lm_head.weight
 
 you can find there are **32** layers for LLaMA2-7B weight.
 
-| weight name                     | usage                |
-|---------------------------------|----------------------|
-| tok_embeddings.weight           | embedding layer      |
-| rope.freqs                      | RoPE operator in MHA |
-| layers.*.attention_norm.weight  | MHA                  |
-| layers.*.attention.wq.weight    | MHA                  |
-| layers.*.attention.wk.weight    | MHA                  |
-| layers.*.attention.wv.weight    | MHA                  |
-| layers.*.attention.wo.weight    | MHA                  |
-| layers.*.ffn_norm.weight        | FFN                  |
-| layers.*.feed_forward.w1.weight | FFN                  |
-| layers.*.feed_forward.w2.weight | FFN                  |
-| layers.*.feed_forward.w3.weight | FFN                  |
-| norm.weight                     | LM head              |
-| output.weight                   | LM head              |
+| weight name                                    | usage |
+|------------------------------------------------|-------|
+| model.embed_model.embed_tokens.weight          | EMB   |
+| model.layers.*.input_layernorm.weight          | RMS   |
+| model.layers.*.self_attn.q_proj.weight         | MHA   |
+| model.layers.*.self_attn.k_proj.weight         | MHA   |
+| model.layers.*.self_attn.v_proj.weight         | MHA   |
+| model.layers.*.self_attn.o_proj.weight         | MHA   |
+| model.layers.*.post_attention_layernorm.weight | RMS   |
+| model.layers.*.mlp.up_proj.weight              | FFN   |
+| model.layers.*.mlp.gate_proj.weight            | FFN   |
+| model.layers.*.mlp.down_proj.weight            | FFN   |
+| model.norm.weight                              | RMS   |
+| lm_head.weight                                 | LM    |
 
-![image](.README_images/weight-overview.png)
-
-you can see the default data type of weight is **bfloat16**.
+llama2's original weight dtype is **bfloat16**, it was converted to **float16** as **HF** format. using **float32** here
+for demo on **CPU**.
 
 ***
 
@@ -98,21 +95,17 @@ this part will introduce operators that used in LLaMA2-7B model.
 ### 2.1 tokenizer.
 
 ```python
-import torch
-from sentencepiece import SentencePieceProcessor
+from tokenizers import Tokenizer
 
-tokenizer = SentencePieceProcessor("/stores/llm_models/llama/Llama-2-7b/tokenizer.model")
-
+tokenizer = Tokenizer.from_file("/stores/llm_models/llama/Llama-2-7b-hf/tokenizer.json")
 input_sentence = "I believe the meaning of life is to be"
-tokens = tokenizer.encode(input_sentence)
-tokens = [tokenizer.bos_id()] + tokens
-tokens = torch.tensor(tokens)
-
 print(f"input_sentence = {input_sentence}")
-print(tokens)
+tokens = tokenizer.encode(input_sentence).ids
+
+pass
 ```
 
-![image](.README_images/tokenizer-overview.png)
+![](.README_images/tokenizer-overview.png)
 
 The LLaMA tokenizer is a **BPE** model based on **sentencepiece**.
 
@@ -132,16 +125,17 @@ embedding_layer = torch.nn.Embedding(vocab_size, dim)
 embedding_layer.weight.data.copy_(model["tok_embeddings.weight"])
 ```
 
-![image](.README_images/embbedding-overview.png)
+![](.README_images/embbedding-overview.png)
 
 ***
 
 ### 2.3 RMS (Root Mean Square Normalization).
 
-![image](.README_images/RMS-formula.png)
+![](.README_images/RMS-formula.png)
 
 ```python
 import torch
+from safetensors import safe_open
 
 norm_eps = 1e-05
 
@@ -150,25 +144,30 @@ def rms_norm(x, norm_weights):
     return (x * torch.rsqrt(x.pow(2).mean(-1, keepdim=True) + torch.tensor(norm_eps))) * norm_weights
 
 
-model = torch.load("/stores/llm_models/llama/Llama-2-7b/consolidated.00.pth")
-layer = 0
-norm_weights = model[f"layers.{layer}.attention_norm.weight"]
+model = {}
+for i in range(1, 3):
+    with safe_open(f"/stores/llm_models/llama/Llama-2-7b-hf/model-0000{i}-of-00002.safetensors", framework="pt") as f:
+        for k in f.keys():
+            model[k] = f.get_tensor(k)
+norm_weights = model[f"model.layers.0.input_layernorm.weight"].to(torch.float)
 x = torch.rand((3, 4096))
 y = rms_norm(x, norm_weights)
 
 print(x)
 print(y)
+
+pass
 ```
 
-![image](.README_images/rms-overview.png)
+![](.README_images/rms-overview.png)
 
-you can see **layers.*.attention_norm.weight** is the weight of γ (gamma) in RMS formula.
+you can see **model.layers.*.input_layernorm.weight** is the weight of γ (gamma) in RMS formula.
 
 ***
 
 ### 2.4 RoPE (Rotary Position Embedding).
 
-![image](.README_images/RoPE-overview.png)
+![](.README_images/RoPE-overview.png)
 
 above picture shows how RoPE embed position info into Q and K.
 
@@ -191,7 +190,7 @@ print(freqs_1)
 print(freqs_2)
 ```
 
-![image](.README_images/freqs-overview.png)
+![](.README_images/freqs-overview.png)
 
 you can see **rope.freqs** in weight file is pre-computed freqs.
 
@@ -211,7 +210,7 @@ freqs_for_each_token = torch.outer(torch.arange(token_length), freqs)
 freqs_cis = torch.polar(torch.ones_like(freqs_for_each_token), freqs_for_each_token)
 ```
 
-![image](.README_images/freqs_cis-overview.png)
+![](.README_images/freqs_cis-overview.png)
 
 you can see the size of freqs_cis is **(10, 64)**.
 
@@ -242,7 +241,7 @@ plt.title('freqs_cis (one row)')
 plt.show()
 ```
 
-![image](.README_images/freqs-one-row-overview.png)
+![](.README_images/freqs-one-row-overview.png)
 
 ***
 
@@ -269,7 +268,7 @@ q_layer = q_layer_weight.view(n_heads, q_layer_weight.shape[0] // n_heads, dim)
 q_layer_head = q_layer[head]
 ```
 
-![image](.README_images/get-layer0-head0-q-weight.png)
+![](.README_images/get-layer0-head0-q-weight.png)
 
 from above picture you can see **layers.0.attention.wq.weight** is split into 32 parts.
 
@@ -283,7 +282,7 @@ from above picture you can see **layers.0.attention.wq.weight** is split into 32
 
 ##### q_per_token
 
-![image](.README_images/q-k-v-output.png)
+![](.README_images/q-k-v-output.png)
 
 | tensor name          | size        |
 |----------------------|-------------|
@@ -297,7 +296,7 @@ here need transpose q_layer_head due to **q_layer_weight** is torch.nn.Linear's 
 
 ##### mask
 
-![image](.README_images/mask-overview.png)
+![](.README_images/mask-overview.png)
 
     tensor([[0., -inf, -inf, -inf, -inf, -inf, -inf, -inf, -inf, -inf],
             [0., 0., -inf, -inf, -inf, -inf, -inf, -inf, -inf, -inf],
@@ -316,9 +315,9 @@ from above picture you can see the size of mask is (10, 10).
 
 ### 2.6 FFN (Feed Forward Network).
 
-![image](.README_images/FF-formula.png)
+![](.README_images/FF-formula.png)
 
-![image](.README_images/ffn-overview.png)
+![](.README_images/ffn-overview.png)
 
 | operator name | weight name |
 |---------------|-------------|
@@ -330,7 +329,7 @@ from above picture you can see the size of mask is (10, 10).
 
 ### 2.7 LM head.
 
-![image](.README_images/lm-head-overview.png)
+![](.README_images/lm-head-overview.png)
 
 only need to get last row of **final_embedding**.
 
