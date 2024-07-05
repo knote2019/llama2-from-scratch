@@ -3,21 +3,21 @@ from safetensors import safe_open
 from tokenizers import Tokenizer
 
 # ----------------------------------------------------------------------------------------------------------------------
-# llama2 7b parameters.
+# llama3 8b parameters.
 hidden_size = 4096
 q_heads = 32
-kv_heads = 32
+kv_heads = 8
 kv_head_size = q_heads // kv_heads
 norm_eps = 1e-05
-rope_theta = 10000
-vocab_size = 32000
+rope_theta = 500000
+vocab_size = 128256
 layers = 32
 
 # ----------------------------------------------------------------------------------------------------------------------
-tokenizer = Tokenizer.from_file("/stores/llm_models/llama/Llama-2-7b-hf/tokenizer.json")
+tokenizer = Tokenizer.from_file("/stores/llm_models/llama/Meta-Llama-3-8B/tokenizer.json")
 model = {}
-for i in range(1, 3):
-    with safe_open(f"/stores/llm_models/llama/Llama-2-7b-hf/model-0000{i}-of-00002.safetensors", framework="pt") as f:
+for i in range(1, 5):
+    with safe_open(f"/stores/llm_models/llama/Meta-Llama-3-8B/model-0000{i}-of-00004.safetensors", framework="pt") as f:
         for k in f.keys():
             model[k] = f.get_tensor(k)
 
