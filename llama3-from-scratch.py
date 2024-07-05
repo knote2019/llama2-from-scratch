@@ -71,9 +71,9 @@ for layer_index in range(layers):
     wk = model[f"model.layers.{layer_index}.self_attn.k_proj.weight"].to(torch.float)
     wv = model[f"model.layers.{layer_index}.self_attn.v_proj.weight"].to(torch.float)
 
-    wq = wq.view(heads, wq.shape[0] // heads, hidden_size)
-    wk = wk.view(kv_heads, wk.shape[0] // kv_heads, hidden_size)
-    wv = wv.view(kv_heads, wv.shape[0] // kv_heads, hidden_size)
+    wq = wq.view(heads, head_dim, hidden_size)
+    wk = wk.view(kv_heads, head_dim, hidden_size)
+    wv = wv.view(kv_heads, head_dim, hidden_size)
 
     qkv_attention_list = []
     GQA = heads // kv_heads
