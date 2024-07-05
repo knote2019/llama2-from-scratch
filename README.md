@@ -1,4 +1,5 @@
 ***
+
 # 1. Introduction
 
 official LLaMA model definition can be find in https://github.com/meta-llama/llama.
@@ -6,6 +7,7 @@ official LLaMA model definition can be find in https://github.com/meta-llama/lla
 this part will introduce structure of LLaMA2-7B model, and also the links to download model weight.
 
 ***
+
 ### 1.1 model structure.
 
 ![image](llama2-dia/gpt-vs-llama.png)
@@ -15,16 +17,18 @@ this part will introduce structure of LLaMA2-7B model, and also the links to dow
 ![image](llama2-dia/llama2-structure.png)
 
 ***
+
 ### 1.2 download model.
 
-| site       | download link                                          |
-|------------|--------------------------------------------------------|
-| gitee      | https://ai.gitee.com/hf-models/meta-llama/Llama-2-7b   |
-| modelscope | https://www.modelscope.cn/models/shakechen/Llama-2-7b  |
+| site       | download link                                         |
+|------------|-------------------------------------------------------|
+| gitee      | https://ai.gitee.com/hf-models/meta-llama/Llama-2-7b  |
+| modelscope | https://www.modelscope.cn/models/shakechen/Llama-2-7b |
 
 from above two site you can download model weight for inference.
 
 ***
+
 ### 1.3 model parameters.
 
 ```python
@@ -84,11 +88,13 @@ you can find there are **32** layers for LLaMA2-7B weight.
 you can see the default data type of weight is **bfloat16**.
 
 ***
+
 # 2. Operators.
 
 this part will introduce operators that used in LLaMA2-7B model.
 
 ***
+
 ### 2.1 tokenizer.
 
 ```python
@@ -111,6 +117,7 @@ print(tokens)
 The LLaMA tokenizer is a **BPE** model based on **sentencepiece**.
 
 ***
+
 ### 2.2 embedding.
 
 ```python
@@ -128,6 +135,7 @@ embedding_layer.weight.data.copy_(model["tok_embeddings.weight"])
 ![image](.README_images/embbedding-overview.png)
 
 ***
+
 ### 2.3 RMS (Root Mean Square Normalization).
 
 ![image](.README_images/RMS-formula.png)
@@ -137,8 +145,10 @@ import torch
 
 norm_eps = 1e-05
 
+
 def rms_norm(x, norm_weights):
     return (x * torch.rsqrt(x.pow(2).mean(-1, keepdim=True) + torch.tensor(norm_eps))) * norm_weights
+
 
 model = torch.load("/stores/llm_models/llama/Llama-2-7b/consolidated.00.pth")
 layer = 0
@@ -155,6 +165,7 @@ print(y)
 you can see **layers.*.attention_norm.weight** is the weight of γ (gamma) in RMS formula.
 
 ***
+
 ### 2.4 RoPE (Rotary Position Embedding).
 
 ![image](.README_images/RoPE-overview.png)
@@ -162,14 +173,16 @@ you can see **layers.*.attention_norm.weight** is the weight of γ (gamma) in RM
 above picture shows how RoPE embed position info into Q and K.
 
 ***
+
 ##### rope.freqs
+
 ```python
 import torch
 
 rope_theta = 10000.0
 
 zero_to_one_split_into_64_parts = torch.tensor(range(64)) / 64
-freqs_1 = 1.0 / (rope_theta**zero_to_one_split_into_64_parts)
+freqs_1 = 1.0 / (rope_theta ** zero_to_one_split_into_64_parts)
 
 model = torch.load("/stores/llm_models/llama/Llama-2-7b/consolidated.00.pth")
 freqs_2 = model["rope.freqs"].to(torch.float)
@@ -183,6 +196,7 @@ print(freqs_2)
 you can see **rope.freqs** in weight file is pre-computed freqs.
 
 ***
+
 ##### freqs_cis
 
 ```python
@@ -202,6 +216,7 @@ freqs_cis = torch.polar(torch.ones_like(freqs_for_each_token), freqs_for_each_to
 you can see the size of freqs_cis is **(10, 64)**.
 
 ***
+
 ##### freqs_cis one row plot image.
 
 ```python
@@ -230,9 +245,11 @@ plt.show()
 ![image](.README_images/freqs-one-row-overview.png)
 
 ***
+
 ### 2.5 MHA (Multi-Headed Attention).
 
 ***
+
 ##### q_layer_head
 
 ```python
@@ -263,6 +280,7 @@ from above picture you can see **layers.0.attention.wq.weight** is split into 32
 | q_layer_head   | (128, 4096)     |
 
 ***
+
 ##### q_per_token
 
 ![image](.README_images/q-k-v-output.png)
@@ -276,6 +294,7 @@ from above picture you can see **layers.0.attention.wq.weight** is split into 32
 here need transpose q_layer_head due to **q_layer_weight** is torch.nn.Linear's weight.
 
 ***
+
 ##### mask
 
 ![image](.README_images/mask-overview.png)
@@ -294,6 +313,7 @@ here need transpose q_layer_head due to **q_layer_weight** is torch.nn.Linear's 
 from above picture you can see the size of mask is (10, 10).
 
 ***
+
 ### 2.6 FFN (Feed Forward Network).
 
 ![image](.README_images/FF-formula.png)
@@ -307,6 +327,7 @@ from above picture you can see the size of mask is (10, 10).
 | up            | w3          |
 
 ***
+
 ### 2.7 LM head.
 
 ![image](.README_images/lm-head-overview.png)
@@ -314,6 +335,7 @@ from above picture you can see the size of mask is (10, 10).
 only need to get last row of **final_embedding**.
 
 ***
+
 # 3. Inference code.
 
 this part shows the python code of LLaMA2-7B inference.
@@ -343,10 +365,6 @@ def rms_norm(x, norm_weights):
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-# set embedding_layer.
-
-# set freqs
-
 # --------------------
 # Input
 # --------------------
@@ -367,7 +385,9 @@ token_embeddings_unnormalized = embedding_layer(tokens).to(torch.bfloat16)
 # --------------------
 # prepare freqs_cis
 # --------------------
-freqs = model["rope.freqs"].to(torch.float)
+# freqs = model["rope.freqs"].to(torch.float)
+zero_to_one_split_into_64_parts = torch.tensor(range(64)) / 64
+freqs = 1.0 / (rope_theta ** zero_to_one_split_into_64_parts)
 freqs_for_each_token = torch.outer(torch.arange(len(tokens)), freqs)
 freqs_cis = torch.polar(torch.ones_like(freqs_for_each_token), freqs_for_each_token)
 
@@ -386,7 +406,6 @@ for layer in range(n_layers):
     q_layer_weight = model[f"layers.{layer}.attention.wq.weight"]
     k_layer_weight = model[f"layers.{layer}.attention.wk.weight"]
     v_layer_weight = model[f"layers.{layer}.attention.wv.weight"]
-    w_layer_weight = model[f"layers.{layer}.attention.wo.weight"]
 
     q_layer = q_layer_weight.view(n_heads, q_layer_weight.shape[0] // n_heads, dim)
     k_layer = k_layer_weight.view(n_kv_heads, k_layer_weight.shape[0] // n_kv_heads, dim)
@@ -413,7 +432,7 @@ for layer in range(n_layers):
         k_per_token_split_into_pairs_rotated = torch.view_as_real(k_per_token_as_complex_numbers * freqs_cis)
         k_per_token_rotated = k_per_token_split_into_pairs_rotated.view(k_per_token.shape)
 
-        qk_per_token = torch.matmul(q_per_token_rotated, k_per_token_rotated.T) / (128**0.5)
+        qk_per_token = torch.matmul(q_per_token_rotated, k_per_token_rotated.T) / (128 ** 0.5)
         mask = torch.full((len(token_embeddings_unnormalized), len(token_embeddings_unnormalized)), float("-inf"))
         mask = torch.triu(mask, diagonal=1)
         qk_per_token_after_masking = qk_per_token + mask
@@ -455,6 +474,7 @@ print(f"next_word = {next_word}")
 ```
 
 # 4. reference.
+
 https://github.com/meta-llama/llama
 
 https://github.com/naklecha/llama3-from-scratch

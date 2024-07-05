@@ -22,10 +22,6 @@ def rms_norm(x, norm_weights):
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-# set embedding_layer.
-
-# set freqs
-
 # --------------------
 # Input
 # --------------------
@@ -46,7 +42,9 @@ token_embeddings_unnormalized = embedding_layer(tokens).to(torch.bfloat16)
 # --------------------
 # prepare freqs_cis
 # --------------------
-freqs = model["rope.freqs"].to(torch.float)
+# freqs = model["rope.freqs"].to(torch.float)
+zero_to_one_split_into_64_parts = torch.tensor(range(64)) / 64
+freqs = 1.0 / (rope_theta ** zero_to_one_split_into_64_parts)
 freqs_for_each_token = torch.outer(torch.arange(len(tokens)), freqs)
 freqs_cis = torch.polar(torch.ones_like(freqs_for_each_token), freqs_for_each_token)
 
@@ -65,7 +63,6 @@ for layer in range(n_layers):
     q_layer_weight = model[f"layers.{layer}.attention.wq.weight"]
     k_layer_weight = model[f"layers.{layer}.attention.wk.weight"]
     v_layer_weight = model[f"layers.{layer}.attention.wv.weight"]
-    w_layer_weight = model[f"layers.{layer}.attention.wo.weight"]
 
     q_layer = q_layer_weight.view(n_heads, q_layer_weight.shape[0] // n_heads, dim)
     k_layer = k_layer_weight.view(n_kv_heads, k_layer_weight.shape[0] // n_kv_heads, dim)
@@ -92,7 +89,7 @@ for layer in range(n_layers):
         k_per_token_split_into_pairs_rotated = torch.view_as_real(k_per_token_as_complex_numbers * freqs_cis)
         k_per_token_rotated = k_per_token_split_into_pairs_rotated.view(k_per_token.shape)
 
-        qk_per_token = torch.matmul(q_per_token_rotated, k_per_token_rotated.T) / (128**0.5)
+        qk_per_token = torch.matmul(q_per_token_rotated, k_per_token_rotated.T) / (128 ** 0.5)
         mask = torch.full((len(token_embeddings_unnormalized), len(token_embeddings_unnormalized)), float("-inf"))
         mask = torch.triu(mask, diagonal=1)
         qk_per_token_after_masking = qk_per_token + mask
