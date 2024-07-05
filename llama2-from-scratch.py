@@ -9,7 +9,7 @@ q_heads = 32
 kv_heads = 32
 kv_head_size = q_heads // kv_heads
 norm_eps = 1e-05
-rope_theta = 10000.0
+rope_theta = 10000
 vocab_size = 32000
 layers = 32
 
