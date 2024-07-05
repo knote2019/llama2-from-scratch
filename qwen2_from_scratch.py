@@ -95,6 +95,7 @@ for layer_index in range(layers):
         k = torch.matmul(mha_rms_norm_output, wk_head) + bk_head
         v = torch.matmul(mha_rms_norm_output, wv_head) + bv_head
 
+        # rope.
         q_rope = rope(q)
         k_rope = rope(k)
 
