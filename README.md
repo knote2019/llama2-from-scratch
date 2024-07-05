@@ -33,8 +33,10 @@ from above two site you can download model weight for inference.
 ```python
 from safetensors import safe_open
 
-for i in range(1, 3):
-    with safe_open(f"/stores/llm_models/llama/Llama-2-7b-hf/model-0000{i}-of-00002.safetensors", framework="pt") as f:
+safetensors = 2
+for i in range(1, safetensors + 1):
+    safetensor = "/stores/llm_models/llama/Llama-2-7b-hf/model-000%02d-of-000%02d.safetensors" % (i, safetensors)
+    with safe_open(safetensor, framework="pt") as f:
         for k in f.keys():
             print(k)
 ```

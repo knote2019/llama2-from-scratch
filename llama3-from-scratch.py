@@ -5,9 +5,8 @@ from tokenizers import Tokenizer
 # ----------------------------------------------------------------------------------------------------------------------
 # llama3 8b parameters.
 hidden_size = 4096
-q_heads = 32
+heads = 32
 kv_heads = 8
-GQA = q_heads // kv_heads
 norm_eps = 1e-05
 rope_theta = 500000
 vocab_size = 128256
@@ -16,8 +15,10 @@ layers = 32
 # ----------------------------------------------------------------------------------------------------------------------
 tokenizer = Tokenizer.from_file("/stores/llm_models/llama/Meta-Llama-3-8B/tokenizer.json")
 model = {}
-for i in range(1, 5):
-    with safe_open(f"/stores/llm_models/llama/Meta-Llama-3-8B/model-0000{i}-of-00004.safetensors", framework="pt") as f:
+safetensors = 4
+for i in range(1, safetensors + 1):
+    safetensor = "/stores/llm_models/llama/Meta-Llama-3-8B/model-000%02d-of-000%02d.safetensors" % (i, safetensors)
+    with safe_open(safetensor, framework="pt") as f:
         for k in f.keys():
             model[k] = f.get_tensor(k)
 
@@ -58,6 +59,7 @@ def rope(x):
 # transformer layers.
 # --------------------
 transformer_output = embedding_output
+head_dim = hidden_size // heads
 for layer_index in range(layers):
     # -------
     # MHA.
@@ -69,12 +71,13 @@ for layer_index in range(layers):
     wk = model[f"model.layers.{layer_index}.self_attn.k_proj.weight"].to(torch.float)
     wv = model[f"model.layers.{layer_index}.self_attn.v_proj.weight"].to(torch.float)
 
-    wq = wq.view(q_heads, wq.shape[0] // q_heads, hidden_size)
+    wq = wq.view(heads, wq.shape[0] // heads, hidden_size)
     wk = wk.view(kv_heads, wk.shape[0] // kv_heads, hidden_size)
     wv = wv.view(kv_heads, wv.shape[0] // kv_heads, hidden_size)
 
     qkv_attention_list = []
-    for head in range(q_heads):
+    GQA = heads // kv_heads
+    for head in range(heads):
         wq_head = wq[head].T
         wk_head = wk[head // GQA].T
         wv_head = wv[head // GQA].T
@@ -88,7 +91,7 @@ for layer_index in range(layers):
         k_rope = rope(k)
 
         # dot production attention.
-        qk = torch.matmul(q_rope, k_rope.T) / (128 ** 0.5)
+        qk = torch.matmul(q_rope, k_rope.T) / (head_dim ** 0.5)
         mask = torch.full(qk.shape, float("-inf"))
         mask = torch.triu(mask, diagonal=1)
         qk_masked = qk + mask
