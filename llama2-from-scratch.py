@@ -83,6 +83,7 @@ for layer_index in range(layers):
         k = torch.matmul(mha_rms_norm_output, wk_head)
         v = torch.matmul(mha_rms_norm_output, wv_head)
 
+        # rope.
         q_rope = rope(q)
         k_rope = rope(k)
 
@@ -124,9 +125,9 @@ for layer_index in range(layers):
 # Post Process
 # --------------------
 output_rms_norm = rms_norm(transformer_output, model["model.norm.weight"]).to(torch.float)
-logits = torch.matmul(output_rms_norm[-1], model["lm_head.weight"].T.to(torch.float))
+output_logits = torch.matmul(output_rms_norm[-1], model["lm_head.weight"].T.to(torch.float))
 
 # decode last token.
-next_token = torch.argmax(logits, dim=-1)
+next_token = torch.argmax(output_logits, dim=-1)
 next_word = tokenizer.decode([next_token.item()])
 print(f"next_word = '{next_word}'")
