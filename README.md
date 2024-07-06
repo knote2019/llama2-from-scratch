@@ -24,7 +24,7 @@ this part will introduce structure of **LLaMA2-7B** model and also the links to 
 |------------|----------------------------------------------------------|
 | modelscope | https://www.modelscope.cn/models/shakechen/Llama-2-7b-hf |
 
-from above two site you can download model weight for inference.
+from above site you can download model weight for inference.
 
 ***
 
