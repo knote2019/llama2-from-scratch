@@ -135,9 +135,8 @@ for layer_index in range(layers):
 
     qkv_attention_all = torch.cat(qkv_attention_list, dim=-1)
 
-    wo = model[f"transformer.encoder.layers.{layer_index}.self_attention.dense.weight"].to(torch.float)
-
-    mha_output = torch.matmul(qkv_attention_all, wo.T)
+    wo = model[f"transformer.encoder.layers.{layer_index}.self_attention.dense.weight"].T.to(torch.float)
+    mha_output = torch.matmul(qkv_attention_all, wo)
 
     mha_output_with_residual = mha_output + transformer_output
 
