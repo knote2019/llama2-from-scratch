@@ -6,6 +6,8 @@ from safetensors import safe_open
 hidden_size = 4096
 heads = 32
 kv_heads = 2
+head_dim = hidden_size // heads
+GQA = heads // kv_heads
 norm_eps = 0.00000015625
 rope_theta = 500000
 vocab_size = 151552
@@ -80,7 +82,6 @@ def rope(x):
 # transformer layers.
 # --------------------
 transformer_output = embedding_output
-head_dim = hidden_size // heads
 for layer_index in range(layers):
     # -------
     # MHA.
@@ -104,7 +105,6 @@ for layer_index in range(layers):
     bv = bv.reshape(kv_heads, -1)
 
     qkv_attention_list = []
-    GQA = heads // kv_heads
     for head in range(heads):
         wq_head = wq[head].T
         wk_head = wk[head // GQA].T

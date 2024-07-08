@@ -7,6 +7,8 @@ from tokenizers import Tokenizer
 hidden_size = 3584
 heads = 28
 kv_heads = 4
+head_dim = hidden_size // heads
+GQA = heads // kv_heads
 norm_eps = 1e-06
 rope_theta = 1000000
 vocab_size = 152064
@@ -59,7 +61,6 @@ def rope(x):
 # transformer layers.
 # --------------------
 transformer_output = embedding_output
-head_dim = hidden_size // heads
 for layer_index in range(layers):
     # -------
     # MHA.
@@ -84,7 +85,6 @@ for layer_index in range(layers):
     bv = bv.reshape(kv_heads, -1)
 
     qkv_attention_list = []
-    GQA = heads // kv_heads
     for head in range(heads):
         wq_head = wq[head].T
         wk_head = wk[head // GQA].T
