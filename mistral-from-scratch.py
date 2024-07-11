@@ -10,18 +10,18 @@ kv_heads = 8
 head_dim = hidden_size // heads
 GQA = heads // kv_heads
 norm_eps = 1e-05
-rope_theta = 500000
-vocab_size = 128256
+rope_theta = 1000000
+vocab_size = 32000
 layers = 32
 
 # ----------------------------------------------------------------------------------------------------------------------
-tokenizer = Tokenizer.from_file("/stores/llm_models/llama/Meta-Llama-3-8B/tokenizer.json")
+tokenizer = Tokenizer.from_file("/stores/llm_models/mistral/Mistral-7B-v0.2-hf/tokenizer.json")
 
 # ----------------------------------------------------------------------------------------------------------------------
 model = {}
-safetensors = 4
+safetensors = 3
 for i in range(1, safetensors + 1):
-    safetensor = "/stores/llm_models/llama/Meta-Llama-3-8B/model-000%02d-of-000%02d.safetensors" % (i, safetensors)
+    safetensor = "/stores/llm_models/mistral/Mistral-7B-v0.2-hf/model-000%02d-of-000%02d.safetensors" % (i, safetensors)
     with safe_open(safetensor, framework="pt") as f:
         for k in f.keys():
             model[k] = f.get_tensor(k)
