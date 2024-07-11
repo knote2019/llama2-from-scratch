@@ -2,7 +2,7 @@ import torch
 from safetensors import safe_open
 
 # ----------------------------------------------------------------------------------------------------------------------
-# glm4 9b parameters.
+# model parameters.
 hidden_size = 4096
 heads = 32
 kv_heads = 2
@@ -34,9 +34,9 @@ def create_tokenizer():
         mergeable_ranks=mergeable_ranks,
         special_tokens={}
     )
-
-
 tokenizer = create_tokenizer()
+
+# ----------------------------------------------------------------------------------------------------------------------
 model = {}
 safetensors = 10
 for i in range(1, safetensors + 1):

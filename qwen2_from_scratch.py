@@ -3,7 +3,7 @@ from safetensors import safe_open
 from tokenizers import Tokenizer
 
 # ----------------------------------------------------------------------------------------------------------------------
-# qwen2 7b parameters.
+# model parameters.
 hidden_size = 3584
 heads = 28
 kv_heads = 4
@@ -16,6 +16,8 @@ layers = 28
 
 # ----------------------------------------------------------------------------------------------------------------------
 tokenizer = Tokenizer.from_file("/stores/llm_models/qwen/Qwen2-7B/tokenizer.json")
+
+# ----------------------------------------------------------------------------------------------------------------------
 model = {}
 safetensors = 4
 for i in range(1, safetensors + 1):

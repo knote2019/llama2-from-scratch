@@ -3,7 +3,7 @@ from safetensors import safe_open
 from tokenizers import Tokenizer
 
 # ----------------------------------------------------------------------------------------------------------------------
-# llama2 7b parameters.
+# model parameters.
 hidden_size = 4096
 heads = 32
 kv_heads = 32
@@ -16,6 +16,8 @@ layers = 32
 
 # ----------------------------------------------------------------------------------------------------------------------
 tokenizer = Tokenizer.from_file("/stores/llm_models/llama/Llama-2-7b-hf/tokenizer.json")
+
+# ----------------------------------------------------------------------------------------------------------------------
 model = {}
 safetensors = 2
 for i in range(1, safetensors + 1):

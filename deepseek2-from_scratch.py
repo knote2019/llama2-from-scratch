@@ -2,45 +2,39 @@ import torch
 from safetensors import safe_open
 
 # ----------------------------------------------------------------------------------------------------------------------
-# glm4 9b parameters.
-hidden_size = 4096
-heads = 32
-kv_heads = 2
+# model parameters.
+hidden_size = 2048
+heads = 16
+kv_heads = 16
+kv_lora_rank = 512
+
 head_dim = hidden_size // heads
 GQA = heads // kv_heads
-norm_eps = 0.00000015625
-rope_theta = 500000
-vocab_size = 151552
-layers = 40
 
+nope_head_dim = 128
+rope_head_dim = 64
+
+norm_eps = 1e-06
+rope_theta = 10000
+
+shared_experts = 2
+routed_experts = 64
+experts_per_tok = 6
+
+moe_hidden_size = 1408
+moe_layer_freq = 1
+
+vocab_size = 102400
+layers = 27
 
 # ----------------------------------------------------------------------------------------------------------------------
-def create_tokenizer():
-    import base64
-    import tiktoken
-    pat_str = "(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\\r\\n\\p{L}\\p{N}]?\\p{L}+|\\p{N}{1,3}| ?[^\\s\\p{L}\\p{N}]+[" \
-              "\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+"
-    mergeable_ranks = {}
-    with open("/stores/llm_models/glm/glm-4-9b/tokenizer.model") as f:
-        for line in f:
-            token, rank = line.strip().split()
-            rank = int(rank)
-            token = base64.b64decode(token)
-            mergeable_ranks[token] = rank
+tokenizer = Tokenizer.from_file("/stores/llm_models/deepseek/DeepSeek-V2-Lite/tokenizer.json")
 
-    return tiktoken.Encoding(
-        name="tokenizer",
-        pat_str=pat_str,
-        mergeable_ranks=mergeable_ranks,
-        special_tokens={}
-    )
-
-
-tokenizer = create_tokenizer()
+# ----------------------------------------------------------------------------------------------------------------------
 model = {}
-safetensors = 10
+safetensors = 4
 for i in range(1, safetensors + 1):
-    safetensor = "/stores/llm_models/glm/glm-4-9b/model-000%02d-of-000%02d.safetensors" % (i, safetensors)
+    safetensor = "/stores/llm_models/deepseek/DeepSeek-V2-Lite/model-000%02d-of-000%02d.safetensors" % (i, safetensors)
     with safe_open(safetensor, framework="pt") as f:
         for k in f.keys():
             model[k] = f.get_tensor(k)
@@ -49,7 +43,7 @@ for i in range(1, safetensors + 1):
 # input.
 input_sentence = "I believe the meaning of life is to be"
 print(f"input_sentence = {input_sentence}")
-tokens = tokenizer.encode(input_sentence)
+tokens = tokenizer.encode(input_sentence).ids
 tokens = torch.tensor(tokens)
 
 # embedding.
