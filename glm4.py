@@ -1,6 +1,9 @@
+import time
+
 import torch
 from safetensors import safe_open
 
+print(time.strftime("start_time: %Y-%m-%d %H:%M:%S", time.localtime()))
 # ----------------------------------------------------------------------------------------------------------------------
 # model parameters.
 hidden_size = 4096
@@ -34,6 +37,8 @@ def create_tokenizer():
         mergeable_ranks=mergeable_ranks,
         special_tokens={}
     )
+
+
 tokenizer = create_tokenizer()
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -166,3 +171,5 @@ output_logits = torch.matmul(output_rms_norm[-1], model["transformer.output_laye
 next_token = torch.argmax(output_logits, dim=-1)
 next_word = tokenizer.decode([next_token.item()])
 print(f"next_word = '{next_word}'")
+
+print(time.strftime("stop_time : %Y-%m-%d %H:%M:%S", time.localtime()))

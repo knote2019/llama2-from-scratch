@@ -1,7 +1,10 @@
+import time
+
 import torch
 from safetensors import safe_open
 from tokenizers import Tokenizer
 
+print(time.strftime("start_time: %Y-%m-%d %H:%M:%S", time.localtime()))
 # ----------------------------------------------------------------------------------------------------------------------
 # model parameters.
 hidden_size = 3584
@@ -148,3 +151,5 @@ output_logits = torch.matmul(output_rms_norm[-1], model["lm_head.weight"].T.to(t
 next_token = torch.argmax(output_logits, dim=-1)
 next_word = tokenizer.decode([next_token.item()])
 print(f"next_word = '{next_word}'")
+
+print(time.strftime("stop_time : %Y-%m-%d %H:%M:%S", time.localtime()))
