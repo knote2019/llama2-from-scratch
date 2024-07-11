@@ -1,5 +1,6 @@
 import torch
 from safetensors import safe_open
+from tokenizers import Tokenizer
 
 # ----------------------------------------------------------------------------------------------------------------------
 # model parameters.
@@ -34,7 +35,7 @@ tokenizer = Tokenizer.from_file("/stores/llm_models/deepseek/DeepSeek-V2-Lite/to
 model = {}
 safetensors = 4
 for i in range(1, safetensors + 1):
-    safetensor = "/stores/llm_models/deepseek/DeepSeek-V2-Lite/model-000%02d-of-000%02d.safetensors" % (i, safetensors)
+    safetensor = "/stores/llm_models/deepseek/DeepSeek-V2-Lite/model-000%02d-of-000%03d.safetensors" % (i, safetensors)
     with safe_open(safetensor, framework="pt") as f:
         for k in f.keys():
             model[k] = f.get_tensor(k)
@@ -48,7 +49,7 @@ tokens = torch.tensor(tokens)
 
 # embedding.
 embedding = torch.nn.Embedding(vocab_size, hidden_size, dtype=torch.float)
-embedding.weight.data.copy_(model["transformer.embedding.word_embeddings.weight"].to(torch.float))
+embedding.weight.data.copy_(model["model.embed_tokens.weight"].to(torch.float))
 embedding_output = embedding(tokens)
 
 
@@ -80,14 +81,14 @@ for layer_index in range(layers):
     # -------
     # MHA.
     # -------
-    mha_rms_norm_weight = model[f"transformer.encoder.layers.{layer_index}.input_layernorm.weight"].to(torch.float)
+    mha_rms_norm_weight = model[f"model.layers.{layer_index}.input_layernorm.weight"].to(torch.float)
     mha_rms_norm_output = rms_norm(transformer_output, mha_rms_norm_weight)
 
-    w_q_k_v = model[f"transformer.encoder.layers.{layer_index}.self_attention.query_key_value.weight"].to(torch.float)
+    w_q_k_v = model[f"model.layers.{layer_index}.self_attention.query_key_value.weight"].to(torch.float)
     wq, wk, wv = w_q_k_v.split([heads * head_dim, kv_heads * head_dim, kv_heads * head_dim],
                                dim=0)
 
-    b_q_k_v = model[f"transformer.encoder.layers.{layer_index}.self_attention.query_key_value.bias"].to(torch.float)
+    b_q_k_v = model[f"model.layers.{layer_index}.self_attention.query_key_value.bias"].to(torch.float)
     bq, bk, bv = b_q_k_v.split([heads * head_dim, kv_heads * head_dim, kv_heads * head_dim])
 
     wq = wq.view(heads, head_dim, hidden_size)
@@ -129,7 +130,7 @@ for layer_index in range(layers):
 
     qkv_attention_all = torch.cat(qkv_attention_list, dim=-1)
 
-    wo = model[f"transformer.encoder.layers.{layer_index}.self_attention.dense.weight"].T.to(torch.float)
+    wo = model[f"model.layers.{layer_index}.self_attention.dense.weight"].T.to(torch.float)
     mha_output = torch.matmul(qkv_attention_all, wo)
 
     mha_output_with_residual = mha_output + transformer_output
@@ -137,18 +138,21 @@ for layer_index in range(layers):
     # -------
     # FFN.
     # -------
-    ffn_rms_norm_weight = model[f"transformer.encoder.layers.{layer_index}.post_attention_layernorm.weight"].to(
-        torch.float)
-    ffn_rms_norm_output = rms_norm(mha_output_with_residual, ffn_rms_norm_weight)
+    if layer_index == 0:
+        ffn_rms_norm_weight = model[f"model.layers.{layer_index}.post_attention_layernorm.weight"].to(
+            torch.float)
+        ffn_rms_norm_output = rms_norm(mha_output_with_residual, ffn_rms_norm_weight)
 
-    w_up = model[f"transformer.encoder.layers.{layer_index}.mlp.dense_h_to_4h.weight"].T.to(torch.float)
-    w_down = model[f"transformer.encoder.layers.{layer_index}.mlp.dense_4h_to_h.weight"].T.to(torch.float)
+        w_up = model[f"model.layers.{layer_index}.mlp.dense_h_to_4h.weight"].T.to(torch.float)
+        w_down = model[f"model.layers.{layer_index}.mlp.dense_4h_to_h.weight"].T.to(torch.float)
 
-    up = torch.matmul(ffn_rms_norm_output, w_up)
-    up = torch.chunk(up, 2, dim=-1)
-    ffn_output = torch.matmul(torch.functional.F.silu(up[0]) * up[1], w_down)
+        up = torch.matmul(ffn_rms_norm_output, w_up)
+        up = torch.chunk(up, 2, dim=-1)
+        ffn_output = torch.matmul(torch.functional.F.silu(up[0]) * up[1], w_down)
 
-    transformer_output = ffn_output + mha_output_with_residual
+        transformer_output = ffn_output + mha_output_with_residual
+    else:
+        pass
 
 # --------------------
 # Post Process
