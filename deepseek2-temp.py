@@ -179,74 +179,39 @@ for layer_index in range(layers):
     k_per_token_pe = (kv_per_token_rope * cos) + (rotate_half(kv_per_token_rope) * sin)
 
     qkv_attention_list = []
-    if layer_index == 0:
-        for head in range(heads):
-            wq_head = wq[head]
-            q_layer_head_nope, q_layer_head_pe = torch.split(wq_head, [nope_head_dim, rope_head_dim], dim=0)
-            q_per_token_nope = torch.matmul(mha_rms_norm_output, q_layer_head_nope.T)
-            q_per_token_pe = torch.matmul(mha_rms_norm_output, q_layer_head_pe.T)
+    for head in range(heads):
+        wq_head = wq[head]
+        q_layer_head_nope, q_layer_head_pe = torch.split(wq_head, [nope_head_dim, rope_head_dim], dim=0)
+        q_per_token_nope = torch.matmul(mha_rms_norm_output, q_layer_head_nope.T)
+        q_per_token_pe = torch.matmul(mha_rms_norm_output, q_layer_head_pe.T)
 
-            k_layer_head_nope = k_per_token_nope[head]
-            v_per_token = v_states[head]
+        k_layer_head_nope = k_per_token_nope[head]
+        v_per_token = v_states[head]
 
-            kv_seq_len = v_per_token.shape[0]
-            cos, sin = cos_cached[:kv_seq_len], sin_cached[:kv_seq_len]
+        kv_seq_len = v_per_token.shape[0]
+        cos, sin = cos_cached[:kv_seq_len], sin_cached[:kv_seq_len]
 
-            query_states = k_per_token_pe.new_empty(q_per_token_pe.shape[0], nope_head_dim + rope_head_dim)
-            query_states[:, : nope_head_dim] = q_per_token_nope
-            query_states[:, nope_head_dim:] = q_per_token_pe
+        query_states = k_per_token_pe.new_empty(q_per_token_pe.shape[0], nope_head_dim + rope_head_dim)
+        query_states[:, : nope_head_dim] = q_per_token_nope
+        query_states[:, nope_head_dim:] = q_per_token_pe
 
-            key_states = k_per_token_pe.new_empty(k_per_token_pe.shape[0], nope_head_dim + rope_head_dim)
-            key_states[:, : nope_head_dim] = k_layer_head_nope
-            key_states[:, nope_head_dim:] = k_per_token_pe
+        key_states = k_per_token_pe.new_empty(k_per_token_pe.shape[0], nope_head_dim + rope_head_dim)
+        key_states[:, : nope_head_dim] = k_layer_head_nope
+        key_states[:, nope_head_dim:] = k_per_token_pe
 
-            # dot production attention.
-            qk_per_token = torch.matmul(query_states, key_states.T) / softmax_scale
-            mask = torch.full((len(tokens), len(tokens)), float("-inf"), device=tokens.device)
-            mask = torch.triu(mask, diagonal=1)
-            qk_per_token_after_masking = qk_per_token + mask
+        # dot production attention.
+        qk_per_token = torch.matmul(query_states, key_states.T) / softmax_scale
+        mask = torch.full((len(tokens), len(tokens)), float("-inf"), device=tokens.device)
+        mask = torch.triu(mask, diagonal=1)
+        qk_per_token_after_masking = qk_per_token + mask
 
-            qk_per_token_after_masking_after_softmax = torch.nn.functional.softmax(qk_per_token_after_masking, dim=1,
-                                                                                   dtype=torch.float32).to(torch.float)
+        qk_per_token_after_masking_after_softmax = torch.nn.functional.softmax(qk_per_token_after_masking, dim=1,
+                                                                               dtype=torch.float32).to(torch.float)
 
-            qkv_attention = torch.matmul(qk_per_token_after_masking_after_softmax, v_per_token)
+        qkv_attention = torch.matmul(qk_per_token_after_masking_after_softmax, v_per_token)
 
-            # append.
-            qkv_attention_list.append(qkv_attention)
-    else:
-        for head in range(heads):
-            wq_head = wq[head]
-            q_layer_head_nope, q_layer_head_pe = torch.split(wq_head, [nope_head_dim, rope_head_dim], dim=0)
-            q_per_token_nope = torch.matmul(mha_rms_norm_output, q_layer_head_nope.T)
-            q_per_token_pe = torch.matmul(mha_rms_norm_output, q_layer_head_pe.T)
-
-            k_layer_head_nope = k_per_token_nope[head]
-            v_per_token = v_states[head]
-
-            kv_seq_len = v_per_token.shape[0]
-            cos, sin = cos_cached[:kv_seq_len], sin_cached[:kv_seq_len]
-
-            query_states = k_per_token_pe.new_empty(q_per_token_pe.shape[0], nope_head_dim + rope_head_dim)
-            query_states[:, : nope_head_dim] = q_per_token_nope
-            query_states[:, nope_head_dim:] = q_per_token_pe
-
-            key_states = k_per_token_pe.new_empty(k_per_token_pe.shape[0], nope_head_dim + rope_head_dim)
-            key_states[:, : nope_head_dim] = k_layer_head_nope
-            key_states[:, nope_head_dim:] = k_per_token_pe
-
-            # dot production attention.
-            qk_per_token = torch.matmul(query_states, key_states.T) / softmax_scale
-            mask = torch.full((len(tokens), len(tokens)), float("-inf"), device=tokens.device)
-            mask = torch.triu(mask, diagonal=1)
-            qk_per_token_after_masking = qk_per_token + mask
-
-            qk_per_token_after_masking_after_softmax = torch.nn.functional.softmax(qk_per_token_after_masking, dim=1,
-                                                                                   dtype=torch.float32).to(torch.float)
-
-            qkv_attention = torch.matmul(qk_per_token_after_masking_after_softmax, v_per_token)
-
-            # append.
-            qkv_attention_list.append(qkv_attention)
+        # append.
+        qkv_attention_list.append(qkv_attention)
 
     qkv_attention_all = torch.cat(qkv_attention_list, dim=-1)
 
