@@ -191,6 +191,10 @@ for layer_index in range(layers):
         kv_seq_len = v_per_token.shape[0]
         cos, sin = cos_cached[:kv_seq_len], sin_cached[:kv_seq_len]
 
+        s, d = q_per_token_pe.shape
+        q_per_token_pe = q_per_token_pe.view(s, d // 2, 2).transpose(2, 1).reshape(s, d)
+        q_per_token_pe = (q_per_token_pe * cos) + (rotate_half(q_per_token_pe) * sin)
+        
         query_states = k_per_token_pe.new_empty(q_per_token_pe.shape[0], nope_head_dim + rope_head_dim)
         query_states[:, : nope_head_dim] = q_per_token_nope
         query_states[:, nope_head_dim:] = q_per_token_pe
