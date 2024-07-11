@@ -10,8 +10,8 @@ print(time.strftime("start_time: %Y-%m-%d %H:%M:%S", time.localtime()))
 hidden_size = 3584
 heads = 28
 kv_heads = 4
-head_dim = hidden_size // heads
-GQA = heads // kv_heads
+head_dim = hidden_size // heads  # 128
+GQA = heads // kv_heads  # 7
 norm_eps = 1e-06
 rope_theta = 1000000
 vocab_size = 152064

@@ -8,23 +8,23 @@ print(time.strftime("start_time: %Y-%m-%d %H:%M:%S", time.localtime()))
 # ----------------------------------------------------------------------------------------------------------------------
 # model parameters.
 hidden_size = 4096
-heads = 32
+heads = 16
 kv_heads = 8
-head_dim = hidden_size // heads  # 128
-GQA = heads // kv_heads  # 4
-norm_eps = 1e-05
-rope_theta = 500000
-vocab_size = 128256
-layers = 32
+head_dim = hidden_size // heads  # 256
+GQA = heads // kv_heads  # 2
+norm_eps = 1e-06
+rope_theta = 10000
+vocab_size = 256000
+layers = 42
 
 # ----------------------------------------------------------------------------------------------------------------------
-tokenizer = Tokenizer.from_file("/stores/llm_models/llama/Meta-Llama-3-8B/tokenizer.json")
+tokenizer = Tokenizer.from_file("/stores/llm_models/gemma/gemma-2-9b/tokenizer.json")
 
 # ----------------------------------------------------------------------------------------------------------------------
 model = {}
-safetensors = 4
+safetensors = 8
 for i in range(1, safetensors + 1):
-    safetensor = "/stores/llm_models/llama/Meta-Llama-3-8B/model-000%02d-of-000%02d.safetensors" % (i, safetensors)
+    safetensor = "/stores/llm_models/gemma/gemma-2-9b/model-000%02d-of-000%02d.safetensors" % (i, safetensors)
     with safe_open(safetensor, framework="pt") as f:
         for k in f.keys():
             model[k] = f.get_tensor(k)

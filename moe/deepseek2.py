@@ -13,8 +13,8 @@ heads = 16
 kv_heads = 16
 kv_lora_rank = 512
 
-head_dim = hidden_size // heads
-GQA = heads // kv_heads
+head_dim = hidden_size // heads  # 128
+GQA = heads // kv_heads  # 1
 
 nope_head_dim = 128
 rope_head_dim = 64
