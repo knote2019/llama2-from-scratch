@@ -127,7 +127,9 @@ for layer_index in range(layers):
     w_down = model[f"model.layers.{layer_index}.mlp.down_proj.weight"].T.to(torch.float)
 
     up = torch.matmul(ffn_rms_pre_norm_output, w_up)
-    gate = torch.functional.F.silu(torch.matmul(ffn_rms_pre_norm_output, w_gate))
+    # https://github.com/huggingface/transformers/pull/29402
+    # https://github.com/google/gemma_pytorch/blob/main/gemma/model.py
+    gate = torch.functional.F.gelu(torch.matmul(ffn_rms_pre_norm_output, w_gate), approximate="tanh")
     ffn_output = torch.matmul(up * gate, w_down)
 
     ffn_rms_post_norm_weight = model[f"model.layers.{layer_index}.post_feedforward_layernorm.weight"].to(torch.float)
