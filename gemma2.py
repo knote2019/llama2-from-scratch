@@ -7,10 +7,10 @@ from tokenizers import Tokenizer
 print(time.strftime("start_time: %Y-%m-%d %H:%M:%S", time.localtime()))
 # ----------------------------------------------------------------------------------------------------------------------
 # model parameters.
-hidden_size = 4096
+hidden_size = 3584
 heads = 16
 kv_heads = 8
-head_dim = hidden_size // heads  # 256
+head_dim = 256
 GQA = heads // kv_heads  # 2
 norm_eps = 1e-06
 rope_theta = 10000
@@ -50,7 +50,7 @@ def rms_norm(x, norm_weights):
 # rope.
 def rope(x):
     token_length = x.shape[0]
-    zero_to_one_split_into_64_parts = torch.tensor(range(64)) / 64
+    zero_to_one_split_into_64_parts = torch.tensor(range(128)) / 128
     freqs = 1.0 / (rope_theta ** zero_to_one_split_into_64_parts)
     freqs_for_each_token = torch.outer(torch.arange(token_length), freqs)
     freqs_cis = torch.polar(torch.ones_like(freqs_for_each_token), freqs_for_each_token)
@@ -70,8 +70,8 @@ for layer_index in range(layers):
     # -------
     # MHA.
     # -------
-    mha_rms_norm_weight = model[f"model.layers.{layer_index}.input_layernorm.weight"].to(torch.float)
-    mha_rms_norm_output = rms_norm(transformer_output, mha_rms_norm_weight)
+    mha_rms_pre_norm_weight = model[f"model.layers.{layer_index}.input_layernorm.weight"].to(torch.float)
+    mha_rms_pre_norm_output = rms_norm(transformer_output, mha_rms_pre_norm_weight)
 
     wq = model[f"model.layers.{layer_index}.self_attn.q_proj.weight"].to(torch.float)
     wk = model[f"model.layers.{layer_index}.self_attn.k_proj.weight"].to(torch.float)
@@ -87,9 +87,9 @@ for layer_index in range(layers):
         wk_head = wk[head // GQA].T
         wv_head = wv[head // GQA].T
 
-        q = torch.matmul(mha_rms_norm_output, wq_head)
-        k = torch.matmul(mha_rms_norm_output, wk_head)
-        v = torch.matmul(mha_rms_norm_output, wv_head)
+        q = torch.matmul(mha_rms_pre_norm_output, wq_head)
+        k = torch.matmul(mha_rms_pre_norm_output, wk_head)
+        v = torch.matmul(mha_rms_pre_norm_output, wv_head)
 
         # rope.
         q_rope = rope(q)
@@ -111,32 +111,38 @@ for layer_index in range(layers):
     wo = model[f"model.layers.{layer_index}.self_attn.o_proj.weight"].T.to(torch.float)
     mha_output = torch.matmul(qkv_attention_all, wo)
 
-    mha_output_with_residual = mha_output + transformer_output
+    mha_rms_post_norm_weight = model[f"model.layers.{layer_index}.post_attention_layernorm.weight"].to(torch.float)
+    mha_rms_post_norm_output = rms_norm(mha_output, mha_rms_post_norm_weight)
+
+    mha_output_with_residual = mha_rms_post_norm_output + transformer_output
 
     # -------
     # FFN.
     # -------
-    ffn_rms_norm_weight = model[f"model.layers.{layer_index}.post_attention_layernorm.weight"].to(torch.float)
-    ffn_rms_norm_output = rms_norm(mha_output_with_residual, ffn_rms_norm_weight)
+    ffn_rms_pre_norm_weight = model[f"model.layers.{layer_index}.pre_feedforward_layernorm.weight"].to(torch.float)
+    ffn_rms_pre_norm_output = rms_norm(mha_output_with_residual, ffn_rms_pre_norm_weight)
 
     w_up = model[f"model.layers.{layer_index}.mlp.up_proj.weight"].T.to(torch.float)
     w_gate = model[f"model.layers.{layer_index}.mlp.gate_proj.weight"].T.to(torch.float)
     w_down = model[f"model.layers.{layer_index}.mlp.down_proj.weight"].T.to(torch.float)
 
-    up = torch.matmul(ffn_rms_norm_output, w_up)
-    gate = torch.functional.F.silu(torch.matmul(ffn_rms_norm_output, w_gate))
+    up = torch.matmul(ffn_rms_pre_norm_output, w_up)
+    gate = torch.functional.F.silu(torch.matmul(ffn_rms_pre_norm_output, w_gate))
     ffn_output = torch.matmul(up * gate, w_down)
 
-    transformer_output = ffn_output + mha_output_with_residual
+    ffn_rms_post_norm_weight = model[f"model.layers.{layer_index}.post_feedforward_layernorm.weight"].to(torch.float)
+    ffn_rms_post_norm_output = rms_norm(ffn_output, ffn_rms_post_norm_weight)
+
+    transformer_output = ffn_rms_post_norm_output + mha_output_with_residual
 
 # --------------------
 # Post Process
 # --------------------
 output_rms_norm = rms_norm(transformer_output, model["model.norm.weight"]).to(torch.float)
-output_logits = torch.matmul(output_rms_norm[-1], model["lm_head.weight"].T.to(torch.float))
+# output_logits = torch.matmul(output_rms_norm[-1], model["lm_head.weight"].T.to(torch.float))
 
 # decode last token.
-next_token = torch.argmax(output_logits, dim=-1)
+next_token = torch.argmax(output_rms_norm[-1], dim=-1)
 next_word = tokenizer.decode([next_token.item()])
 print(f"next_word = '{next_word}'")
 
