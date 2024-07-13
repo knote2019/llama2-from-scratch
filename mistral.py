@@ -1,3 +1,4 @@
+import math
 import time
 
 import torch
@@ -96,7 +97,7 @@ for layer_index in range(layers):
         k_rope = rope(k)
 
         # dot production attention.
-        qk = torch.matmul(q_rope, k_rope.T) / (head_dim ** 0.5)
+        qk = torch.matmul(q_rope, k_rope.T) / math.sqrt(head_dim)
         mask = torch.full(qk.shape, float("-inf"))
         mask = torch.triu(mask, diagonal=1)
         qk_masked = qk + mask
