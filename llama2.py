@@ -9,9 +9,9 @@ print(time.strftime("start_time: %Y-%m-%d %H:%M:%S", time.localtime()))
 # ----------------------------------------------------------------------------------------------------------------------
 # model parameters.
 hidden_size = 4096
+head_dim = 128
 heads = 32
 kv_heads = 32
-head_dim = hidden_size // heads  # 128
 GQA = heads // kv_heads  # 1
 norm_eps = 1e-05
 rope_theta = 10000

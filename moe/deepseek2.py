@@ -9,26 +9,20 @@ print(time.strftime("start_time: %Y-%m-%d %H:%M:%S", time.localtime()))
 # ----------------------------------------------------------------------------------------------------------------------
 # model parameters.
 hidden_size = 2048
+head_dim = 128
 heads = 16
 kv_heads = 16
 kv_lora_rank = 512
-
-head_dim = hidden_size // heads  # 128
 GQA = heads // kv_heads  # 1
-
 nope_head_dim = 128
 rope_head_dim = 64
-
 norm_eps = 1e-06
 rope_theta = 10000
-
 shared_experts = 2
 routed_experts = 64
 experts_per_tok = 6
-
 moe_hidden_size = 1408
 moe_layer_freq = 1
-
 vocab_size = 102400
 layers = 27
 
